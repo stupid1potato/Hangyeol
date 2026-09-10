@@ -33,6 +33,42 @@
       "license": "Apache-2.0",
       "sourceUrl": "https://github.com/neolord0/hwpxlib/blob/f9fd2255ac0fc57414e0b657d115e7de51d31c65/testFile/reader_writer/sample1.hwpx",
       "owner": "dev1"
+    },
+    {
+      "id": "F14",
+      "path": "fixtures/14_wrong_ext_hwpx.pdf",
+      "format": "hwpx",
+      "expects": {
+        "sectionCount": 1
+      },
+      "notes": "wrong_ext: byte-identical to hub-A; filename ends .pdf so format detect must ignore extension. Week-1 detect gate uses F14 (F13 is backlog).",
+      "license": "derived-from Apache-2.0 hub-A",
+      "sourceUrl": "fixtures/hub_hwpxlib_SimpleTable.hwpx",
+      "owner": "dev1"
+    },
+    {
+      "id": "F16",
+      "path": "fixtures/16_corrupt_truncated.hwpx",
+      "format": "corrupt",
+      "expects": {
+        "errorCode": "CORRUPT"
+      },
+      "notes": "First 1024 bytes of hub-A (broken ZIP, no EOCD). Week1 id used 16_corrupt_truncated.hwp; path is .hwpx because the COMMIT_OK base is HWPX. Do not use SafeDocs/HOLD HWP.",
+      "license": "derived-from Apache-2.0 hub-A",
+      "sourceUrl": "fixtures/hub_hwpxlib_SimpleTable.hwpx",
+      "owner": "dev1"
+    },
+    {
+      "id": "F21",
+      "path": "fixtures/21_prettyprinted_bad.hwpx",
+      "format": "hwpx",
+      "expects": {
+        "errorCode": "BAD_PACKAGE"
+      },
+      "notes": "prettyprint-bad: XML (especially Contents/section*.xml) indented; mimetype is last ZIP entry and DEFLATE-compressed (breaks mimetype-first/STORE). Negative packaging fixture.",
+      "license": "derived-from Apache-2.0 hub-A",
+      "sourceUrl": "fixtures/hub_hwpxlib_SimpleTable.hwpx",
+      "owner": "dev1"
     }
   ]
 }
