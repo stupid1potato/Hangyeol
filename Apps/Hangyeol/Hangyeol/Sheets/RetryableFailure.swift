@@ -61,11 +61,17 @@ enum SessionOpenFailurePresentation {
 
 /// VoiceOver string for failure sheets: title + cause + next action.
 enum FailureSheetA11y {
-    static func label(title: String, error: HangyeolError) -> String {
-        var parts = [title, error.localizedDescription]
-        if let suggestion = error.recoverySuggestion, !suggestion.isEmpty {
-            parts.append(suggestion)
+    static func label(title: String, cause: String, nextAction: String?) -> String {
+        var parts = [title, cause]
+        if let nextAction, !nextAction.isEmpty {
+            parts.append(L10n.errorNextAction)
+            parts.append(nextAction)
         }
         return parts.joined(separator: " ")
+    }
+
+    static func label(title: String, error: HangyeolError) -> String {
+        let presentation = ErrorSheetPresentation.make(error: error, titleOverride: title)
+        return presentation.accessibilityLabel
     }
 }

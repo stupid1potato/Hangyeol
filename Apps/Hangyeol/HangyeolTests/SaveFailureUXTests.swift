@@ -77,8 +77,9 @@ final class SaveFailureUXTests: XCTestCase {
         XCTAssertTrue((bookmark.recoverySuggestion ?? "").contains("다시 열"))
 
         let empty = HangyeolError.emptyFile
-        XCTAssertTrue(empty.localizedDescription.contains("열 수 없습니다"))
+        XCTAssertTrue(empty.localizedDescription.contains("비어"))
         XCTAssertTrue((empty.recoverySuggestion ?? "").contains("HWP"))
+        XCTAssertEqual(ErrorSheetPresentation.make(error: empty).title, "빈 파일은 열 수 없습니다")
 
         XCTAssertFalse(HangyeolError.saveRejected.localizedDescription.contains("SAVE_REJECTED"))
         XCTAssertTrue((HangyeolError.saveRejected.recoverySuggestion ?? "").contains("HWPX"))
