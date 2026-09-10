@@ -12,12 +12,12 @@ final class RetryableFailure: ObservableObject {
 
     var sheetBinding: Binding<HangyeolError?> {
         Binding(
-            get: { error },
+            get: { self.error },
             set: { newValue in
                 if newValue == nil {
-                    dismiss()
+                    self.dismiss()
                 } else {
-                    error = newValue
+                    self.error = newValue
                 }
             }
         )
