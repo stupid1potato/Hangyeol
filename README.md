@@ -13,6 +13,7 @@ macOS 14+ 네이티브 앱. `.hwp` / `.hwpx` 열기 · 본문·표 수정 · HWP
 - Engine: [image-meta list](docs/engine/image-meta.md) · [known limitations](docs/known-limitations.md)
 - App (Week5): [UTI / Finder / Dock smoke](docs/app/uti-finder-dock-smoke.md)
 - App (Week6): [공증 준비 체크리스트 초안](docs/app/notarization-prep.md)
+- App (Week7/8): [내부 배포 · 회귀 체크리스트](docs/app/week7-internal-regression.md)
 
 ## 모노레포 구조
 

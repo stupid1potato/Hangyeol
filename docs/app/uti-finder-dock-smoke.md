@@ -152,6 +152,8 @@ Apps/Hangyeol/Hangyeol.xcodeproj → HangyeolTests
 
 ## 범위 밖 (다음 PR)
 
+week-7/8 내부 배포·insert/delete/표/`listImages` 회귀는 [week7-internal-regression.md](week7-internal-regression.md). Finder/Dock 단계는 이 문서가 정본.
+
 - ErrorSheet 카피·도움말 알려진 한계 (PR #30 등 UI 트랙)
 - XCFramework 커밋 / engine ABI
 - WYSIWYG, Quick Look, 기본 앱 강제 (`lsregister` 자동화)
