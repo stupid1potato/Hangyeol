@@ -68,7 +68,12 @@ struct DocumentWindow: View {
                     onOpenRecent: openRecent
                 )
             } else {
-                StructuredTextView(model: document.model)
+                // Sketch: in-memory TableBlock Binding only. Do not call
+                // DocumentSession / HangyeolKit listTables or setCellText here.
+                StructuredTextView(
+                    model: $document.model,
+                    tablesEditable: true
+                )
             }
         }
         .frame(minWidth: 720, minHeight: 480)
