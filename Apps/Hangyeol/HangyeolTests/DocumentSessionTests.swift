@@ -132,13 +132,10 @@ final class DocumentSessionTests: XCTestCase {
         let original = HangyeolDocument(model: MockEngine.sampleDocument())
         let data = try original.encodedContents(as: .hwpx)
 
-        let wrapper = FileWrapper(regularFileWithContents: data)
-        wrapper.filename = "roundtrip.hwpx"
         let reopened = try HangyeolDocument(
-            configuration: HangyeolDocument.ReadConfiguration(
-                contentType: .hangyeolHwpx,
-                file: wrapper
-            )
+            opening: data,
+            type: .hwpx,
+            filename: "roundtrip.hwpx"
         )
 
         XCTAssertFalse(reopened.session === original.session)
