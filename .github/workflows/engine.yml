@@ -1,0 +1,26 @@
+name: engine
+
+on:
+  push:
+    paths:
+      - "engine/**"
+      - "fixtures/**"
+      - ".github/workflows/engine.yml"
+  pull_request:
+    paths:
+      - "engine/**"
+      - "fixtures/**"
+      - ".github/workflows/engine.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          # Hangyeol product pin is rustc ≥ 1.88. This rhwp SHA pulls aes 0.9.3
+          # (rust-version 1.89). 1.93.1 matches rhwp's rust-toolchain.toml.
+          toolchain: "1.93.1"
+      - name: Test hangyeol_engine
+        run: cargo test --manifest-path engine/Cargo.toml

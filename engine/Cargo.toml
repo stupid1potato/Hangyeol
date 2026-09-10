@@ -1,0 +1,19 @@
+[package]
+name = "hangyeol_engine"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "Thin Hangyeol C ABI wrapping rhwp::document_core::DocumentCore (parser / serial / edit only)"
+license = "MIT"
+publish = false
+repository = "https://github.com/stupid1potato/Hangyeol"
+
+[lib]
+name = "hangyeol_engine"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+rhwp = { git = "https://github.com/edwardkim/rhwp.git", rev = "cac9b4f7cc743535cd7c00fe4f286abd67e7145b", default-features = false }
+
+[dev-dependencies]
+zip = { version = "2", default-features = false, features = ["deflate"] }
