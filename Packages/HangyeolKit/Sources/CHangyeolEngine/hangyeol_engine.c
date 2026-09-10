@@ -4,9 +4,11 @@
  * Stub implementation: always fail. No real parser, no decrypt, no write.
  *
  * Symbols match engine/include/hangyeol_engine.h (source of truth). This .c
- * is NOT the Rust cdylib — it only keeps the SPM clang target compiling.
- * Do not link engine/ from this package. Apps/Hangyeol must not depend on
- * HangyeolKit; MockEngine stays live until an XCFramework exists.
+ * is NOT the Rust cdylib — Package.swift compiles it only when
+ * HangyeolEngine.xcframework is absent (Linux CI / no Vendor). When the
+ * XCFramework is present, shim.c is compiled instead so live hg_* come
+ * from the binary. Apps/Hangyeol must not depend on HangyeolKit yet;
+ * MockEngine stays live in the app.
  */
 
 hg_status hg_open(

@@ -1,28 +1,78 @@
 # HangyeolKit
 
-Header + Swift stub + comments only. **No XCFramework yet.** The thin `hg_*` cdylib lives in `engine/` (PR #9) but this package **does not link it**. `RealEngine` waits for an XCFramework path.
+Swift FFI wrapper around the rhwp DocumentCore thin C ABI (`hg_*`).
 
-`Apps/Hangyeol` must **not** import this package, must **not** add `RealEngine`, and must **not** call `hg_*`. The live engine stays `MockEngine`. Do not add this product to the Xcode project.
+**This package is not linked from `Apps/Hangyeol`.** The app keeps `MockEngine`. Do not add this product to the Xcode project yet.
 
-Week-3 order: **header sync (this package) → wait XCFramework → RealEngine → app link.** See [week-3 FFI checklist](../../docs/week3-ffi-checklist.md).
+Week-3 order: **header sync → XCFramework vendor path → RealEngine (this package) → app link.** See [week-3 FFI checklist](../../docs/week3-ffi-checklist.md).
 
 ## Engine (팀장3 확정)
 
 - **1순위:** rhwp **DocumentCore** 코어 서브셋 (parser / serial / edit only; renderer · layout · WASM 금지)
 - **Toolchain:** rustc **≥ 1.89** (Hangyeol product pin; pinned rhwp cargo graph / `aes 0.9.3`; CI uses 1.93.1)
-- **Save:** `hg_save(HWPX)` and freeze `hg_save_hwpx` **must** clear `line_segs` on body + table-cell paragraphs **before** serialize (`hp:linesegarray` count 0). This package does not implement that — header/README contract only.
+- **Save:** `hg_save(HWPX)` and freeze `hg_save_hwpx` **must** clear `line_segs` on body + table-cell paragraphs **before** serialize (`hp:linesegarray` count 0). The Rust cdylib implements that; Kit `RealEngine` calls those symbols (it does not re-implement the writer).
 
 ## What this package is
-
-A compile-able SwiftPM sketch of the FFI boundary. C ABI is **synced from** `engine/include/hangyeol_engine.h` (source of truth):
 
 | Piece | Path | Role |
 |-------|------|------|
 | C ABI (synced) | `Sources/CHangyeolEngine/include/hangyeol_engine.h` | Kit: `hg_open` / `hg_save` / `hg_free_buffer` / `hg_close`. Freeze: `hg_plain_text` / `hg_replace_text` / `hg_save_hwpx` / `hg_insert_text` / `hg_delete_range` / `hg_last_error` |
-| C stub | `Sources/CHangyeolEngine/hangyeol_engine.c` | Returns `HG_UNSUPPORTED` / `NULL` only (no parser, no `engine/` cdylib) |
-| Swift stub | `Sources/HangyeolKit/` | Kit-local `HangyeolEngine` + `HangyeolEngineFFI` that throws `notLinked` |
+| C stub | `Sources/CHangyeolEngine/hangyeol_engine.c` | Compiled **only when the XCFramework is absent**. Returns `HG_UNSUPPORTED` / `NULL` |
+| C shim | `Sources/CHangyeolEngine/shim.c` | Compiled **only when the XCFramework is present**. Header-only clang module; no `hg_*` definitions |
+| `RealEngine` | `Sources/HangyeolKit/RealEngine.swift` | Owns `hg_engine*`; live `hg_*` when linked; `notLinked` fallback when the stub is compiled in |
+| `HangyeolEngineFFI` | `Sources/HangyeolKit/HangyeolEngineFFI.swift` | Stub façade (no session). Use `RealEngine` for live calls |
 
-SPM does not mix Swift and C in one target, so the header lives in a clang target (`CHangyeolEngine`) rather than under `Sources/HangyeolKit/include/`. There is **no** SPM `binaryTarget` for `engine/`.
+SPM does not mix Swift and C in one target, so the header lives in a clang target (`CHangyeolEngine`).
+
+## Vendor XCFramework (do not commit the binary)
+
+`Package.swift` links a **local** XCFramework when it finds one. The binary is gitignored.
+
+**Preferred path** (copy or symlink from the Mac build):
+
+```bash
+mkdir -p Packages/HangyeolKit/Vendor
+ln -s /Users/acb/Hangyeol-xcf-build/engine/target/xcframework/HangyeolEngine.xcframework \
+  Packages/HangyeolKit/Vendor/HangyeolEngine.xcframework
+```
+
+Or copy the directory to the same Vendor path. Build procedure: [docs/engine/xcframework.md](../../docs/engine/xcframework.md).
+
+**Env override:** `HANGYEOL_ENGINE_XCFRAMEWORK` — absolute path, or a path relative to `Packages/HangyeolKit`.
+
+```bash
+export HANGYEOL_ENGINE_XCFRAMEWORK=/Users/acb/Hangyeol-xcf-build/engine/target/xcframework/HangyeolEngine.xcframework
+```
+
+How `Package.swift` wires it:
+
+| XCFramework | C target | Swift |
+|-------------|----------|--------|
+| Present **inside** this package (Vendor, or env path under `Packages/HangyeolKit`) | `shim.c` (header-only) | SPM `binaryTarget` `HangyeolEngine` + `HANGYEOL_ENGINE_LINKED`; `RealEngine` calls live `hg_*` |
+| Present **outside** the package (env absolute path) | `shim.c` | Linker flags (`-L` slice / `-lhangyeol_engine`) + `HANGYEOL_ENGINE_LINKED` (SPM `binaryTarget` cannot escape the package) |
+| Absent (Linux CI, clones without Vendor) | `hangyeol_engine.c` stub | `RealEngine` throws `notLinked` |
+
+Never commit `.xcframework` / `.a` / `.dylib`. `Packages/HangyeolKit/Vendor/` is gitignored.
+
+## RealEngine
+
+`RealEngine` owns one `hg_engine*` (`hg_open` → `hg_close` in `deinit` / `close()`):
+
+- `open` / `save` (`HangyeolEngine` protocol)
+- `plainText` / `replaceText` / `saveHwpx` / `insertText` / `deleteRange` / `lastError`
+
+Error mapping (`hg_status` + `hg_last_error`):
+
+| Freeze `hg_last_error` | Kit `hg_status` / `HangyeolKitError` |
+|------------------------|--------------------------------------|
+| `ENCRYPTED` | `HG_PASSWORD` / `.password` |
+| `UNSUPPORTED_VERSION` | `HG_UNSUPPORTED` / `.unsupported` |
+| `SAVE_REJECTED` | `HG_UNSUPPORTED` / `.unsupported` |
+| `CORRUPT` | `HG_CORRUPT` / `.corrupt` |
+
+When the real library is linked, `RealEngine` does **not** throw `notLinked`.
+
+Mac verify (XCFramework + live `hg_*`) is a later step; Linux cannot run the Apple XCFramework.
 
 ## Status kinds (exactly four)
 
@@ -35,11 +85,8 @@ Defined as `hg_status` / `HangyeolStatus`:
 | `HG_CORRUPT` / `.corrupt` | Truncated or malformed document (F16 truncated/unknown) | `CORRUPT` |
 | `HG_PASSWORD` / `.password` | Encrypted / password-protected (decrypt forbidden) | `ENCRYPTED` |
 
-`hg_last_error` on the real engine returns those freeze strings (or NULL after success). The C stub returns NULL.
-
 ## What this package is not
 
-- Not linked from `Apps/Hangyeol` (no import, no xcodeproj product)
-- Not a `RealEngine` implementation and not a live engine call path
-- Not an XCFramework / not a binary link of `engine/` (`RealEngine` waits)
-- Mock stays until XCFramework + RealEngine + app link, in that order
+- Not linked from `Apps/Hangyeol` (no import, no xcodeproj product, no `EngineClient` swap)
+- Not a committed XCFramework / `.a` / `.dylib`
+- Not an app-side `MockEngine` replacement (that PR comes after kit RealEngine)

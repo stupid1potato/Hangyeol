@@ -10,6 +10,16 @@ xcuserdata/
 .swiftpm/
 Packages/HangyeolKit/.build/
 
+# HangyeolEngine XCFramework / native libs — never commit binaries.
+# Vendor a local copy: Packages/HangyeolKit/Vendor/HangyeolEngine.xcframework
+# or set HANGYEOL_ENGINE_XCFRAMEWORK (see Packages/HangyeolKit/README.md).
+Packages/HangyeolKit/Vendor/**
+!Packages/HangyeolKit/Vendor/README.md
+*.xcframework/
+**/*.xcframework/**
+*.a
+*.dylib
+
 # Rust
 engine/target/
 engine/testdata/out/*
