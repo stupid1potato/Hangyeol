@@ -2,11 +2,16 @@
 #define HANGYEOL_ENGINE_H
 
 /*
- * Hangyeol C ABI draft (week-1 stub).
+ * Hangyeol C ABI draft (header + stub only).
  *
- * This header is a future FFI contract for a native document engine.
- * There is no XCFramework yet; Apps/Hangyeol must not import HangyeolKit
- * until week 3 RealEngine. MockEngine remains the live engine.
+ * Engine (팀장3 확정): rhwp DocumentCore 코어 서브셋
+ *   — parser / serial / edit only. renderer · layout · WASM 금지.
+ * Toolchain: rustc ≥ 1.88 (개발자1 cdylib 빌드 기준).
+ *
+ * No implementation here until 개발자1 thin `hg_*` cdylib ships.
+ * There is no XCFramework yet. Apps/Hangyeol must not import HangyeolKit,
+ * must not add RealEngine, and must not call these symbols. MockEngine
+ * remains the live engine.
  *
  * Opaque handle + open/save/close only. Edit helpers (hg_replace_text, …)
  * are week-2 freeze candidates and are intentionally omitted here.
@@ -63,6 +68,10 @@ hg_status hg_open(
 
 /**
  * Serialize the open session.
+ *
+ * REQUIRED (제품 엔진, 개발자1 cdylib): clear `hp:linesegarray` / lineseg
+ * **before** writing. Hangul re-open after text replace depends on this.
+ * This stub does not implement save or lineseg clear.
  *
  * On HG_OK, *out_bytes is a malloc'd buffer of *out_length bytes; free with hg_free_buffer.
  */

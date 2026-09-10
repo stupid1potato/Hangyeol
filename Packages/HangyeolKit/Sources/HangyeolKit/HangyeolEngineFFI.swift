@@ -14,15 +14,16 @@ public enum HangyeolStatus: Int32, Sendable, Equatable {
 }
 
 public enum HangyeolKitError: Error, Sendable, Equatable {
-    /// C ABI / XCFramework is not linked. Apps/Hangyeol must keep `MockEngine`.
+    /// rhwp `hg_*` cdylib / XCFramework is not linked. Apps/Hangyeol must keep `MockEngine`.
     case notLinked
-    /// Draft symbol is not implemented.
+    /// Draft symbol is not implemented (개발자1 thin cdylib 대기).
     case unimplemented
     case status(HangyeolStatus)
 }
 
-/// Thin FFI façade. Calls the C stub (which only returns errors) and then throws
-/// `notLinked` so this cannot be treated as a live engine.
+/// Thin FFI façade over the C stub. Always throws `notLinked`.
+/// Not a RealEngine: no app link, no live `hg_*` calls until 개발자1 cdylib.
+/// Product save (when implemented there) must clear lineseg / `hp:linesegarray` first.
 public struct HangyeolEngineFFI: HangyeolEngine {
     public init() {}
 
@@ -36,6 +37,7 @@ public struct HangyeolEngineFFI: HangyeolEngine {
         throw HangyeolKitError.notLinked
     }
 
+    /// Stub only. Real `hg_save` (DocumentCore cdylib) must lineseg-clear before write.
     public func save(_ model: DocumentModel, as type: DocumentFileType) throws -> Data {
         _ = model
         var outBytes: UnsafeMutablePointer<UInt8>?

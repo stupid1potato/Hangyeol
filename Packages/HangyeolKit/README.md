@@ -1,8 +1,14 @@
 # HangyeolKit
 
-Header + Swift stub only. **No XCFramework yet.**
+Header + Swift stub + comments only. **No XCFramework yet.** 개발자1 thin `hg_*` cdylib가 나오기 전에는 **구현 없음**.
 
-`Apps/Hangyeol` must **not** import this package until week 3 `RealEngine`. The live engine stays `MockEngine`. Do not add this product to the Xcode project.
+`Apps/Hangyeol` must **not** import this package, must **not** add `RealEngine`, and must **not** call `hg_*`. The live engine stays `MockEngine`. Do not add this product to the Xcode project.
+
+## Engine (팀장3 확정)
+
+- **1순위:** rhwp **DocumentCore** 코어 서브셋 (parser / serial / edit only; renderer · layout · WASM 금지)
+- **Toolchain:** rustc **≥ 1.88**
+- **Save:** `hg_save` 전 **`hp:linesegarray` / lineseg clear 필수** (한/글 재오픈). 이 패키지는 호출하지 않음 — 헤더·README 계약만.
 
 ## What this package is
 
@@ -29,7 +35,7 @@ Defined as `hg_status` / `HangyeolStatus`:
 
 ## What this package is not
 
-- Not linked from `Apps/Hangyeol`
-- Not a `RealEngine` implementation
-- Not an XCFramework / `cdylib` drop-in
+- Not linked from `Apps/Hangyeol` (no import, no xcodeproj product)
+- Not a `RealEngine` implementation and not a live engine call path
+- Not an XCFramework / rhwp `hg_*` cdylib (개발자1 산출 대기)
 - 1주차 README used to say “no sources in week 1”; that is replaced by this header+stub
