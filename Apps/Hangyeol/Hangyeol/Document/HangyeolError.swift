@@ -10,6 +10,10 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
     case notYetImplemented(String)
     /// HWP write (`hg_save(..., HG_FILE_HWP)` freeze `SAVE_REJECTED`).
     case saveRejected
+    /// PDF export I/O or context failure. Distinct from document HWPX save.
+    case exportFailed(String)
+    case exportEmptyDocument
+    case printEmptyDocument
 
     var id: String {
         switch self {
@@ -29,6 +33,12 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
             return "notYetImplemented:\(feature)"
         case .saveRejected:
             return "saveRejected"
+        case .exportFailed(let message):
+            return "exportFailed:\(message)"
+        case .exportEmptyDocument:
+            return "exportEmptyDocument"
+        case .printEmptyDocument:
+            return "printEmptyDocument"
         }
     }
 
@@ -83,6 +93,24 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
                 localized: "error.saveRejected",
                 defaultValue: "HWP로는 저장할 수 없습니다."
             )
+        case .exportFailed(let message):
+            return String(
+                format: String(
+                    localized: "error.exportFailed",
+                    defaultValue: "PDF로 보내지 못했습니다. %@"
+                ),
+                message
+            )
+        case .exportEmptyDocument:
+            return String(
+                localized: "error.exportEmpty",
+                defaultValue: "이 창에는 보낼 본문이 없습니다."
+            )
+        case .printEmptyDocument:
+            return String(
+                localized: "error.printEmpty",
+                defaultValue: "이 창에는 인쇄할 본문이 없습니다."
+            )
         }
     }
 
@@ -107,6 +135,21 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
                 localized: "error.saveRejected.recovery",
                 defaultValue: "HWPX로 저장하세요."
             )
+        case .exportFailed:
+            return String(
+                localized: "error.exportFailed.recovery",
+                defaultValue: "저장 위치를 바꾸거나 폴더 권한을 확인한 뒤 다시 보내세요."
+            )
+        case .exportEmptyDocument:
+            return String(
+                localized: "error.exportEmpty.recovery",
+                defaultValue: "파일을 열거나 샘플 문서를 여세요."
+            )
+        case .printEmptyDocument:
+            return String(
+                localized: "error.printEmpty.recovery",
+                defaultValue: "파일을 열거나 샘플 문서를 여세요."
+            )
         }
     }
 
@@ -127,7 +170,7 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
             hangyeol = KitRealEngine.mapError(error)
         }
         switch hangyeol {
-        case .saveRejected, .saveFailed, .notYetImplemented:
+        case .saveRejected, .saveFailed, .notYetImplemented, .exportFailed:
             return hangyeol
         case .engineFailed(let message):
             return .saveFailed(message)
