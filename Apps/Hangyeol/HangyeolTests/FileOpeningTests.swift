@@ -151,8 +151,14 @@ final class FileOpeningTests: XCTestCase {
         let readable = UTType.hangyeolReadableTypes.map(\.identifier)
         XCTAssertEqual(readable.first, UTType.hangyeolHwpx.identifier)
         XCTAssertTrue(readable.contains(UTType.hangyeolHwp.identifier))
-        for imported in UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers {
-            XCTAssertTrue(readable.contains(imported), "hangyeolReadableTypes missing \(imported)")
+        XCTAssertTrue(readable.contains("net.golbin.hop.hwpx"))
+        XCTAssertTrue(readable.contains("net.golbin.hop.hwp"))
+        for imported in UTType.hangyeolImportedTypeIdentifiers {
+            XCTAssertEqual(UTType.declaredImportedType(imported).identifier, imported)
+            XCTAssertTrue(
+                readable.contains(imported),
+                "hangyeolReadableTypes missing \(imported)"
+            )
         }
 
         let expected: [(id: String, ext: String, imported: [String])] = [
@@ -188,14 +194,26 @@ final class FileOpeningTests: XCTestCase {
         let importedIDs = importedDecls.compactMap { $0["UTTypeIdentifier"] as? String }
         XCTAssertEqual(
             Set(importedIDs),
-            Set(UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers)
+            Set(UTType.hangyeolImportedTypeIdentifiers)
         )
+        let taggedExtensions: [String: String] = [
+            "net.golbin.hop.hwpx": "hwpx",
+            "net.golbin.hop.hwp": "hwp",
+            "com.infraware.polarisofficeservice.hwp": "hwp",
+        ]
         for uti in importedDecls {
             XCTAssertNil(uti["UTTypeIconFile"], "do not bundle third-party type icons")
             XCTAssertNil(uti["UTTypeIconName"], "do not bundle third-party type icons")
-            let tags = try XCTUnwrap(uti["UTTypeTagSpecification"] as? [String: Any])
-            let ext = try XCTUnwrap((tags["public.filename-extension"] as? [String])?.first)
-            XCTAssertTrue(["hwpx", "hwp"].contains(ext), ext)
+            let id = try XCTUnwrap(uti["UTTypeIdentifier"] as? String)
+            if let ext = taggedExtensions[id] {
+                let tags = try XCTUnwrap(uti["UTTypeTagSpecification"] as? [String: Any])
+                XCTAssertEqual(tags["public.filename-extension"] as? [String], [ext])
+            } else {
+                XCTAssertNil(
+                    uti["UTTypeTagSpecification"],
+                    "MISSING 한컴 UTI는 HOP 확장자 바인딩과 합쳐지지 않게 태그 없이 import: \(id)"
+                )
+            }
         }
     }
 

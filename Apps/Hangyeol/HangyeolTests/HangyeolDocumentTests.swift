@@ -14,8 +14,20 @@ final class HangyeolDocumentTests: XCTestCase {
         XCTAssertEqual(identifiers.first, UTType.hangyeolHwpx.identifier)
         XCTAssertTrue(identifiers.contains(UTType.hangyeolHwpx.identifier))
         XCTAssertTrue(identifiers.contains(UTType.hangyeolHwp.identifier))
-        for imported in UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers {
-            XCTAssertTrue(identifiers.contains(imported), "readableContentTypes missing imported \(imported)")
+        XCTAssertEqual(
+            Array(identifiers.prefix(UTType.hangyeolDeclaredReadableIdentifiers.count)),
+            UTType.hangyeolDeclaredReadableIdentifiers
+        )
+        for imported in UTType.hangyeolImportedTypeIdentifiers {
+            XCTAssertEqual(
+                UTType.declaredImportedType(imported).identifier,
+                imported,
+                "한컴 미설치여도 imported 식별자를 HOP UTI로 합치지 않는다"
+            )
+            XCTAssertTrue(
+                identifiers.contains(imported),
+                "readableContentTypes missing imported \(imported)"
+            )
         }
     }
 

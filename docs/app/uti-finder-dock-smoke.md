@@ -39,12 +39,12 @@ Mac에서 확인한 확장자 바인딩 (HOP 설치, 한컴 미설치):
 | `net.golbin.hop.hwpx` | import (**필수**, HOP `.hwpx` 바인딩) | `hwpx` | `hangyeolImportedHwpxIdentifiers` |
 | `net.golbin.hop.hwp` | import (**필수**, HOP `.hwp` 바인딩) | `hwp` | `hangyeolImportedHwpIdentifiers` |
 | `com.infraware.polarisofficeservice.hwp` | import (Polaris, Mac lookup) | `hwp` | 동일 |
-| `com.haansoft.HancomOfficeViewer.mac.hwpx` | import (한컴 뷰어, 미설치 Mac에선 MISSING) | `hwpx` | 동일 |
-| `com.haansoft.HancomOfficeViewer.mac.hwp` | import (한컴 뷰어, 미설치 Mac에선 MISSING) | `hwp` | 동일 |
+| `com.haansoft.HancomOfficeViewer.mac.hwpx` | import (한컴 뷰어, 미설치 Mac에선 MISSING; 확장자 태그 없음 — HOP와 합침 방지) | `hwpx` | 동일 |
+| `com.haansoft.HancomOfficeViewer.mac.hwp` | import (한컴 뷰어, 미설치 Mac에선 MISSING; 확장자 태그 없음) | `hwp` | 동일 |
 
 `DocumentFileType.typeIdentifier` 는 계속 `org.hangyeol.hwpx` / `org.hangyeol.hwp`. 타사 식별자는 `init?(typeIdentifier:)` · `HangyeolDocument.fileType(from:)` 가 `.hwpx` / `.hwp` 로 매핑한다.
 
-`UTType.hangyeolReadableTypes` 는 `[.hangyeolHwpx, .hangyeolHwp]` **뒤에** import 식별자와 `UTType(filenameExtension: "hwpx"|"hwp")` 바인딩(Polaris 등 미선언 경쟁자)을 붙인다. `HangyeolDocument.readableContentTypes` 와 같다.  
+`UTType.hangyeolReadableTypes` 는 `hangyeolDeclaredReadableIdentifiers`(export + import 상수, Info.plist와 동일 소스)를 `declaredImportedType`으로 만들고, 그 뒤에 `UTType(filenameExtension:)` 바인딩을 붙인다. 한컴 미설치 Mac에서 `importedAs`가 HOP UTI로 합쳐져도 선언 식별자를 버리지 않는다. `HangyeolDocument.readableContentTypes` 와 같다.  
 쓰기 타입은 HWPX만 (`writableContentTypes` == `[.hangyeolHwpx]`). HWP 디스크 저장은 엔진 `SAVE_REJECTED` → `HangyeolError.saveRejected` (PR #31). Finder 핸들러는 **Owner + Editor** 로 둔다 (열기·기본 앱 순위, org.hangyeol 문서 타입).
 
 ### Info.plist 키
