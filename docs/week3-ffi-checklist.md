@@ -14,7 +14,7 @@ HangyeolKit tracks the engine C ABI **without** linking the app or the Rust cdyl
 
 ## Next (blocked on XCFramework — do not skip ahead)
 
-- [ ] Wait for / vendor an **XCFramework** built from `engine/` (rustc **≥ 1.88**; this rhwp SHA’s cargo graph may need ≥ 1.89; CI uses 1.93.1).
+- [ ] Wait for / vendor an **XCFramework** built from `engine/` (rustc **≥ 1.89**; CI uses 1.93.1). Procedure: [docs/engine/xcframework.md](engine/xcframework.md) (PR #11).
 - [ ] Implement HangyeolKit **`RealEngine`** over that XCFramework (live `hg_*` calls).
 - [ ] **Then** link HangyeolKit from `Apps/Hangyeol` (xcodeproj product).
 - [ ] Replace `MockEngine` with `RealEngine` in the app only after the steps above.
@@ -23,7 +23,7 @@ HangyeolKit tracks the engine C ABI **without** linking the app or the Rust cdyl
 
 - **Clear-before-save.** `hg_save(..., HG_FILE_HWPX, ...)` and `hg_save_hwpx` walk DocumentCore sections / body paragraphs / table-cell paragraphs, `line_segs.clear()`, then `export_hwpx_native`. Result: `hp:linesegarray` count **0**. Kit `hg_save` is that same HWPX path, not a second writer. `.hwp` write is `SAVE_REJECTED` / `HG_UNSUPPORTED`.
 - **Freeze ↔ Kit.** `ENCRYPTED` → `HG_PASSWORD`; `UNSUPPORTED_VERSION` / `SAVE_REJECTED` → `HG_UNSUPPORTED`; `CORRUPT` → `HG_CORRUPT`. F16 truncated/unknown → **CORRUPT**, not unsupported passthrough.
-- **Toolchain.** rustc **≥ 1.88** (Hangyeol product pin).
+- **Toolchain.** rustc **≥ 1.89** (Hangyeol product pin).
 - **Scope.** DocumentCore parser / serial / edit only. No renderer / layout / WASM UI, no Hangyeol-owned binary parser, no ZIP/XML product writer.
 
 ## Forbidden until XCFramework exists
