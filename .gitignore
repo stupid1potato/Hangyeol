@@ -12,6 +12,8 @@ Packages/HangyeolKit/.build/
 
 # Rust
 engine/target/
+engine/testdata/out/*
+!engine/testdata/out/.gitignore
 **/*.rs.bk
 
 # OS / editors
