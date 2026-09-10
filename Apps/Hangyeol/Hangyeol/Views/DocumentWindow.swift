@@ -23,7 +23,7 @@ struct DocumentWindow: View {
                 FindReplaceBar(
                     query: $findQuery,
                     replacement: $replaceQuery,
-                    liveEngine: document.session.canReplace,
+                    liveEngine: EngineClient.liveSession != nil,
                     onFind: {},
                     onReplace: replaceInEngine,
                     onClose: { showFindReplace = false }
@@ -133,12 +133,16 @@ struct DocumentWindow: View {
     }
 
     private func replaceInEngine() {
-        guard document.session.canReplace else { return }
+        guard EngineClient.liveSession != nil else { return }
         let find = findQuery
         let replacement = replaceQuery
         guard !find.isEmpty else { return }
         do {
-            _ = try document.replaceText(find: find, replace: replacement)
+            _ = try EngineClient.replaceText(find: find, replace: replacement)
+            document.model = try EngineClient.refreshDisplayModel(
+                type: document.model.metadata.sourceType,
+                title: document.model.metadata.title
+            )
         } catch let error as HangyeolError {
             presentedError = error
         } catch {
