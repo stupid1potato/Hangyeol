@@ -48,9 +48,82 @@ enum L10n {
         defaultValue: "최근에 연 문서가 없습니다. 문서를 열면 여기에 나타납니다."
     )
     static let recentsOpenHint = String(localized: "empty.recentsOpenHint", defaultValue: "이 최근 문서를 엽니다.")
+    static let openSampleHint = String(
+        localized: "empty.openSampleHint",
+        defaultValue: "앱에 들어 있는 샘플 문서를 엽니다."
+    )
+    static let openDocumentHint = String(
+        localized: "empty.openDocumentHint",
+        defaultValue: "HWP 또는 HWPX 파일을 고릅니다."
+    )
     static let week1Note = String(
         localized: "empty.week1",
-        defaultValue: "파일을 열거나 이 창에 놓으면 문서가 열립니다."
+        defaultValue: "HWP 또는 HWPX 파일을 열거나 이 창에 놓으세요."
+    )
+    static let errorNextAction = String(localized: "sheet.error.nextAction", defaultValue: "다음 조치")
+    static let errorEmptyFileTitle = String(
+        localized: "sheet.error.emptyFile.title",
+        defaultValue: "빈 파일은 열 수 없습니다"
+    )
+    static let errorUnsupportedTypeTitle = String(
+        localized: "sheet.error.unsupportedType.title",
+        defaultValue: "선택한 파일은 열 수 없습니다"
+    )
+    static let errorUnsupportedTypeRecovery = String(
+        localized: "error.unsupportedType.recovery",
+        defaultValue: "HWP 또는 HWPX 파일을 선택하세요."
+    )
+    static let errorUnsupportedTitle = String(
+        localized: "sheet.error.unsupported.title",
+        defaultValue: "이 문서 형식은 열 수 없습니다"
+    )
+    static let errorUnsupportedCause = String(
+        localized: "sheet.error.unsupported.cause",
+        defaultValue: "이 버전이나 보호된 형식은 아직 열 수 없습니다."
+    )
+    static let errorUnsupportedRecovery = String(
+        localized: "sheet.error.unsupported.recovery",
+        defaultValue: "HWP 또는 HWPX 파일을 선택하세요."
+    )
+    static let errorEngineFailedTitle = String(
+        localized: "sheet.error.engineFailed.title",
+        defaultValue: "문서를 열지 못했습니다"
+    )
+    static let errorCorruptTitle = String(
+        localized: "sheet.error.corrupt.title",
+        defaultValue: "손상된 파일은 열 수 없습니다"
+    )
+    static let errorCorruptCause = String(
+        localized: "sheet.error.corrupt.cause",
+        defaultValue: "파일이 손상되었거나 형식이 올바르지 않습니다."
+    )
+    static let errorCorruptRecovery = String(
+        localized: "sheet.error.corrupt.recovery",
+        defaultValue: "다른 파일을 고르거나 원본을 다시 받으세요."
+    )
+    static let errorEncryptedTitle = String(
+        localized: "sheet.error.encrypted.title",
+        defaultValue: "암호 문서는 열 수 없습니다"
+    )
+    static let errorEncryptedCause = String(
+        localized: "sheet.error.encrypted.cause",
+        defaultValue: "이 파일은 암호로 보호되어 있습니다."
+    )
+    static let errorEncryptedRecovery = String(
+        localized: "sheet.error.encrypted.recovery",
+        defaultValue: "비밀번호 해제는 지원하지 않습니다. 다른 파일을 선택하세요."
+    )
+    static let errorSaveRejectedTitle = String(
+        localized: "sheet.error.saveRejected.title",
+        defaultValue: "HWP로는 저장할 수 없습니다"
+    )
+    static let errorSaveRejectedCause = String(
+        localized: "sheet.error.saveRejected.cause",
+        defaultValue: "이 파일은 HWP로 다시 저장할 수 없습니다."
+    )
+    static let errorSaveRejectedRecovery = String(
+        localized: "sheet.error.saveRejected.recovery",
+        defaultValue: "다른 이름으로 HWPX 파일을 저장하세요."
     )
     static let saveFailureRetryHint = String(
         localized: "sheet.saveFailure.retryHint",
@@ -114,7 +187,39 @@ enum L10n {
 
     static let helpBody = String(
         localized: "help.body",
-        defaultValue: "한결은 macOS에서 HWP/HWPX 문서를 엽니다. 파일 → 열기… 를 누르거나 파일을 창이나 Dock 아이콘에 놓아 문서를 여세요."
+        defaultValue: "한결은 macOS에서 HWP/HWPX 문서를 엽니다. 파일 → 열기… 를 누르거나 파일을 창이나 Dock 아이콘에 놓으세요. 본문과 표를 확인하고, PDF로 보내거나 인쇄할 수 있습니다."
+    )
+    static let helpKnownLimitsTitle = String(
+        localized: "help.limits.title",
+        defaultValue: "알려진 한계"
+    )
+    static let helpLimitLayout = String(
+        localized: "help.limits.layout",
+        defaultValue: "조판은 한/글과 픽셀 단위로 같지 않습니다. 보이는 대로 편집(WYSIWYG)은 없고, 본문과 표를 구조화해 보여 줍니다."
+    )
+    static let helpLimitHwpSave = String(
+        localized: "help.limits.hwpSave",
+        defaultValue: ".hwp는 읽을 수 있고, 저장은 HWPX로만 됩니다."
+    )
+    static let helpLimitEncrypted = String(
+        localized: "help.limits.encrypted",
+        defaultValue: "암호가 걸린 문서는 열 수 없습니다. 암호를 풀지 않습니다."
+    )
+    static let helpLimitOpenErrors = String(
+        localized: "help.limits.openErrors",
+        defaultValue: "손상되었거나, 이 버전·형식이 아니거나, 고른 파일이 잘못되면 안내가 열립니다."
+    )
+    static let helpLimitEditSubset = String(
+        localized: "help.limits.editSubset",
+        defaultValue: "표 칸과 문단만 고칠 수 있습니다."
+    )
+    static let helpLimitPdfPrint = String(
+        localized: "help.limits.pdfPrint",
+        defaultValue: "PDF와 인쇄는 본문·표 글자만 보냅니다. 한/글 조판 그대로 찍지 않습니다."
+    )
+    static let helpLimitMvpOut = String(
+        localized: "help.limits.mvpOut",
+        defaultValue: "자동 업데이트와 미리보기는 이 버전에 없습니다."
     )
 
     static let paragraphEditLiveNote = String(

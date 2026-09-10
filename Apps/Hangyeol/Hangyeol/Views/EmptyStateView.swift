@@ -18,17 +18,22 @@ struct EmptyStateView: View {
 
                 Text(L10n.appName)
                     .font(.largeTitle.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("empty-state-title")
 
                 Text(L10n.appTagline)
                     .font(.title3)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("empty-state-tagline")
 
                 Text(L10n.week1Note)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.body)
+                    .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("empty-state-howto")
 
                 HStack(spacing: 12) {
                     Button(action: onOpenSample) {
@@ -37,32 +42,38 @@ struct EmptyStateView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut("o", modifiers: [.command, .shift])
-                    .accessibilityHint(L10n.openSample)
+                    .accessibilityHint(L10n.openSampleHint)
+                    .accessibilityIdentifier(EmptyStatePresentation.openSampleIdentifier)
 
                     Button(action: onOpenDocument) {
                         Text(L10n.openDocument)
                             .frame(minWidth: 120)
                     }
                     .buttonStyle(.bordered)
-                    .accessibilityHint(L10n.openDocument)
+                    .accessibilityHint(L10n.openDocumentHint)
+                    .accessibilityIdentifier(EmptyStatePresentation.openDocumentIdentifier)
                 }
                 .padding(.top, 8)
             }
             .frame(maxWidth: 420, alignment: .leading)
             .padding(40)
             .accessibilityElement(children: .contain)
+            .accessibilitySortPriority(2)
 
             Divider()
 
             VStack(alignment: .leading, spacing: 12) {
                 Text(L10n.recents)
                     .font(.headline)
+                    .foregroundStyle(.primary)
                     .accessibilityAddTraits(.isHeader)
                 if recents.isEmpty {
                     Text(L10n.recentsEmpty)
-                        .foregroundStyle(.secondary)
+                        .font(.body)
+                        .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 4)
+                        .accessibilityIdentifier(EmptyStatePresentation.recentsEmptyIdentifier)
                 } else {
                     ForEach(recents.prefix(8)) { item in
                         Button {
@@ -70,11 +81,13 @@ struct EmptyStateView: View {
                         } label: {
                             Label(item.title, systemImage: "doc")
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                                .foregroundStyle(.primary)
                         }
                         .buttonStyle(.plain)
                         .help(item.url.path)
                         .accessibilityLabel(item.title)
                         .accessibilityHint(L10n.recentsOpenHint)
+                        .accessibilityIdentifier(EmptyStatePresentation.recentIdentifier(title: item.title))
                     }
                 }
                 Spacer()
@@ -82,9 +95,11 @@ struct EmptyStateView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(32)
             .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(EmptyStatePresentation.recentsIdentifier)
+            .accessibilitySortPriority(1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityIdentifier("empty-state")
+        .accessibilityIdentifier(EmptyStatePresentation.rootIdentifier)
     }
 }
 

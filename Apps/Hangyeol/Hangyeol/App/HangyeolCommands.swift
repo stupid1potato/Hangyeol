@@ -108,6 +108,10 @@ struct HangyeolCommands: Commands {
                 actions?.showHelp()
             }
             .disabled(actions == nil)
+            Button(L10n.helpKnownLimitsTitle) {
+                actions?.showHelp()
+            }
+            .disabled(actions == nil)
             Divider()
             Button(L10n.about) {
                 NSApp.orderFrontStandardAboutPanel(options: [

@@ -25,6 +25,11 @@
 		000000000000000000000019 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001A /* EmptyStateView.swift */; };
 		00000000000000000000001B /* FindReplaceBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001C /* FindReplaceBar.swift */; };
 		00000000000000000000001D /* ErrorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001E /* ErrorSheet.swift */; };
+		000000000000000000000121 /* ErrorSheetPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000122 /* ErrorSheetPresentation.swift */; };
+		000000000000000000000123 /* HelpPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000124 /* HelpPresentation.swift */; };
+		000000000000000000000125 /* HelpSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000126 /* HelpSheet.swift */; };
+		000000000000000000000127 /* EmptyStatePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000128 /* EmptyStatePresentation.swift */; };
+		000000000000000000000129 /* ErrorSheetUXTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000012A /* ErrorSheetUXTests.swift */; };
 		00000000000000000000001F /* SaveFailureSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000020 /* SaveFailureSheet.swift */; };
 		0000000000000000000000A1 /* RetryableFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000A0 /* RetryableFailure.swift */; };
 		0000000000000000000000A3 /* DocumentChromeState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000A2 /* DocumentChromeState.swift */; };
@@ -90,6 +95,11 @@
 		00000000000000000000001A /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		00000000000000000000001C /* FindReplaceBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindReplaceBar.swift; sourceTree = "<group>"; };
 		00000000000000000000001E /* ErrorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorSheet.swift; sourceTree = "<group>"; };
+		000000000000000000000122 /* ErrorSheetPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorSheetPresentation.swift; sourceTree = "<group>"; };
+		000000000000000000000124 /* HelpPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpPresentation.swift; sourceTree = "<group>"; };
+		000000000000000000000126 /* HelpSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpSheet.swift; sourceTree = "<group>"; };
+		000000000000000000000128 /* EmptyStatePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStatePresentation.swift; sourceTree = "<group>"; };
+		00000000000000000000012A /* ErrorSheetUXTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorSheetUXTests.swift; sourceTree = "<group>"; };
 		000000000000000000000020 /* SaveFailureSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveFailureSheet.swift; sourceTree = "<group>"; };
 		0000000000000000000000A0 /* RetryableFailure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetryableFailure.swift; sourceTree = "<group>"; };
 		0000000000000000000000A2 /* DocumentChromeState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentChromeState.swift; sourceTree = "<group>"; };
@@ -214,6 +224,9 @@
 				0000000000000000000000C0 /* TableCellEditPresentation.swift */,
 				0000000000000000000000D0 /* ParagraphEditPresentation.swift */,
 				00000000000000000000001A /* EmptyStateView.swift */,
+				000000000000000000000128 /* EmptyStatePresentation.swift */,
+				000000000000000000000122 /* ErrorSheetPresentation.swift */,
+				000000000000000000000124 /* HelpPresentation.swift */,
 				00000000000000000000001C /* FindReplaceBar.swift */,
 			);
 			path = Views;
@@ -223,6 +236,7 @@
 			isa = PBXGroup;
 			children = (
 				00000000000000000000001E /* ErrorSheet.swift */,
+				000000000000000000000126 /* HelpSheet.swift */,
 				000000000000000000000020 /* SaveFailureSheet.swift */,
 				0000000000000000000000A0 /* RetryableFailure.swift */,
 				0000000000000000000000F4 /* ExportProgressSheet.swift */,
@@ -282,6 +296,7 @@
 				0000000000000000000000F2 /* ExportPrintUXTests.swift */,
 				0000000000000000000000F6 /* ExportTests.swift */,
 				000000000000000000000110 /* HangyeolOpenFailureTests.swift */,
+				00000000000000000000012A /* ErrorSheetUXTests.swift */,
 			);
 			path = HangyeolTests;
 			sourceTree = "<group>";
@@ -411,6 +426,10 @@
 				000000000000000000000019 /* EmptyStateView.swift in Sources */,
 				00000000000000000000001B /* FindReplaceBar.swift in Sources */,
 				00000000000000000000001D /* ErrorSheet.swift in Sources */,
+				000000000000000000000125 /* HelpSheet.swift in Sources */,
+				000000000000000000000121 /* ErrorSheetPresentation.swift in Sources */,
+				000000000000000000000123 /* HelpPresentation.swift in Sources */,
+				000000000000000000000127 /* EmptyStatePresentation.swift in Sources */,
 				00000000000000000000001F /* SaveFailureSheet.swift in Sources */,
 				0000000000000000000000A1 /* RetryableFailure.swift in Sources */,
 				0000000000000000000000A3 /* DocumentChromeState.swift in Sources */,
@@ -447,6 +466,7 @@
 				0000000000000000000000F3 /* ExportPrintUXTests.swift in Sources */,
 				0000000000000000000000F7 /* ExportTests.swift in Sources */,
 				000000000000000000000111 /* HangyeolOpenFailureTests.swift in Sources */,
+				000000000000000000000129 /* ErrorSheetUXTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -157,14 +157,14 @@ struct DocumentWindow: View {
             }
         }
         .sheet(item: openErrorSheetBinding) { error in
-            ErrorSheet(error: error) {
+            ErrorSheet(error: error, context: .generic) {
                 dismissOpenError(error)
             }
         }
         .sheet(item: $cellEditError) { error in
             ErrorSheet(
                 error: error,
-                title: L10n.tableCellEditFailureTitle,
+                context: .tableCell,
                 retryTitle: L10n.retry,
                 retryHint: L10n.tableCellEditRetryHint,
                 onRetry: retryLastCellEdit,
@@ -174,7 +174,7 @@ struct DocumentWindow: View {
         .sheet(item: $paragraphEditError) { error in
             ErrorSheet(
                 error: error,
-                title: L10n.paragraphEditFailureTitle,
+                context: .paragraph,
                 retryTitle: L10n.retry,
                 retryHint: L10n.paragraphEditRetryHint,
                 onRetry: retryLastParagraphEdit,
@@ -184,7 +184,7 @@ struct DocumentWindow: View {
         .sheet(item: sessionSaveErrorBinding) { error in
             SaveFailureSheet(
                 error: error,
-                title: L10n.saveFailureTitle,
+                context: .save,
                 retryTitle: L10n.retrySave,
                 retryHint: L10n.saveFailureRetryHint,
                 onRetry: retryDocumentSave,
@@ -194,7 +194,7 @@ struct DocumentWindow: View {
         .sheet(item: exportFailure.sheetBinding) { error in
             SaveFailureSheet(
                 error: error,
-                title: L10n.exportFailureTitle,
+                context: .export,
                 retryTitle: ExportPresentation.retryTitle(for: error),
                 retryHint: ExportPresentation.retryHint(for: error),
                 onRetry: { exportFailure.retry() },
@@ -204,7 +204,7 @@ struct DocumentWindow: View {
         .sheet(item: printFailure.sheetBinding) { error in
             SaveFailureSheet(
                 error: error,
-                title: L10n.printFailureTitle,
+                context: .print,
                 retryTitle: L10n.openDocument,
                 retryHint: L10n.printEmptyRetryHint,
                 onRetry: { printFailure.retry() },
@@ -217,17 +217,15 @@ struct DocumentWindow: View {
         .sheet(item: reopenFailure.sheetBinding) { error in
             ErrorSheet(
                 error: error,
-                title: L10n.reopenFailureTitle,
+                context: .reopen,
                 retryTitle: L10n.retryOpen,
                 retryHint: L10n.reopenRetryHint,
                 onRetry: { reopenFailure.retry() },
                 onDismiss: { reopenFailure.dismiss() }
             )
         }
-        .alert(L10n.help, isPresented: $showHelp) {
-            Button(L10n.ok, role: .cancel) {}
-        } message: {
-            Text(L10n.helpBody)
+        .sheet(isPresented: $showHelp) {
+            HelpSheet(onDismiss: { showHelp = false })
         }
         .focusedSceneValue(\.hangyeolActions, HangyeolWindowActions(
             openSample: loadSample,
