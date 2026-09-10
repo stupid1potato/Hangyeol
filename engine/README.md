@@ -2,7 +2,8 @@
 
 Thin Rust **cdylib** wrapping **`rhwp::document_core::DocumentCore`** only.
 
-- **rustc ≥ 1.88** (`Cargo.toml` `rust-version = "1.88"`)
+- **rustc ≥ 1.88** (Hangyeol product pin, `Cargo.toml` `rust-version`)
+- This rhwp SHA’s cargo graph needs **≥ 1.89** (`aes 0.9.3`). CI uses **1.93.1** (rhwp `rust-toolchain.toml`).
 - parser / serial / edit via DocumentCore
 - **no** Hangyeol-owned OLE/HWP binary parser
 - **no** ZIP/XML hand-edit product path
