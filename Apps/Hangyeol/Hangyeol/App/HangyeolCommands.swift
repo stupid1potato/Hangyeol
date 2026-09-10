@@ -3,6 +3,7 @@ import SwiftUI
 
 struct HangyeolWindowActions {
     var openSample: () -> Void
+    var openDocument: () -> Void
     var toggleFindReplace: () -> Void
     var exportPDF: () -> Void
     var printDocument: () -> Void
@@ -22,8 +23,46 @@ extension FocusedValues {
 
 struct HangyeolCommands: Commands {
     @FocusedValue(\.hangyeolActions) private var actions
+    @ObservedObject private var recents = RecentDocuments.shared
 
     var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            Button(L10n.newDocument) {
+                NSDocumentController.shared.newDocument(nil)
+            }
+            .keyboardShortcut("n")
+
+            Button(L10n.open) {
+                if let openDocument = actions?.openDocument {
+                    openDocument()
+                } else {
+                    FileOpening.presentOpenPanel()
+                }
+            }
+            .keyboardShortcut("o")
+
+            Menu(L10n.recents) {
+                if recents.items.isEmpty {
+                    Button(L10n.recentsEmpty) {}
+                        .disabled(true)
+                } else {
+                    ForEach(recents.items) { item in
+                        Button(item.title) {
+                            do {
+                                try recents.open(item)
+                            } catch {
+                                FileOpening.present(error)
+                            }
+                        }
+                    }
+                    Divider()
+                    Button(L10n.clearRecents) {
+                        recents.clear()
+                    }
+                }
+            }
+        }
+
         CommandGroup(after: .newItem) {
             Button(L10n.openSample) {
                 actions?.openSample()

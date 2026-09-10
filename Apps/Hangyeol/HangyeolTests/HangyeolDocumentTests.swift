@@ -6,6 +6,10 @@ final class HangyeolDocumentTests: XCTestCase {
     func testReadableTypesIncludeHwpxAndHwp() {
         XCTAssertTrue(HangyeolDocument.readableContentTypes.contains(.hangyeolHwpx))
         XCTAssertTrue(HangyeolDocument.readableContentTypes.contains(.hangyeolHwp))
+        XCTAssertEqual(
+            HangyeolDocument.readableContentTypes.map(\.identifier),
+            [UTType.hangyeolHwpx.identifier, UTType.hangyeolHwp.identifier]
+        )
     }
 
     func testWritableTypeIsHwpxByDefault() {

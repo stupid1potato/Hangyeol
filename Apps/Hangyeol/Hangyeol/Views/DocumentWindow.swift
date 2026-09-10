@@ -6,6 +6,7 @@ struct DocumentWindow: View {
     @Binding var document: HangyeolDocument
     var fileURL: URL?
 
+    @Environment(\.openDocument) private var openDocument
     @ObservedObject private var recents = RecentDocuments.shared
     @State private var showFindReplace = false
     @State private var findQuery = ""
@@ -14,6 +15,7 @@ struct DocumentWindow: View {
     @State private var saveFailure: HangyeolError?
     @State private var showHelp = false
     @State private var exportRetry: (() -> Void)?
+    @State private var isDropTargeted = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -41,6 +43,24 @@ struct DocumentWindow: View {
         }
         .frame(minWidth: 720, minHeight: 480)
         .background(Color(nsColor: .windowBackgroundColor))
+        .overlay {
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 3, dash: [10, 6]))
+                    .padding(12)
+                    .overlay {
+                        Text(L10n.dropToOpen)
+                            .font(.title2.weight(.semibold))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(.regularMaterial, in: Capsule())
+                    }
+                    .allowsHitTesting(false)
+            }
+        }
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+            FileOpening.handleDrop(providers: providers)
+        }
         .navigationTitle(document.model.displayTitle)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -89,14 +109,21 @@ struct DocumentWindow: View {
         }
         .focusedSceneValue(\.hangyeolActions, HangyeolWindowActions(
             openSample: loadSample,
+            openDocument: presentOpenPanel,
             toggleFindReplace: { showFindReplace.toggle() },
             exportPDF: exportPDF,
             printDocument: { PrintCoordinator.print(document.model) },
             showHelp: { showHelp = true }
         ))
         .onAppear {
+            FileOpening.install(openDocument: openDocument)
             if let fileURL {
                 recents.noteOpened(fileURL)
+            }
+        }
+        .onChange(of: fileURL) { _, url in
+            if let url {
+                recents.noteOpened(url)
             }
         }
     }
@@ -112,7 +139,8 @@ struct DocumentWindow: View {
     }
 
     private func presentOpenPanel() {
-        NSDocumentController.shared.openDocument(nil)
+        FileOpening.install(openDocument: openDocument)
+        FileOpening.presentOpenPanel()
     }
 
     private func openRecent(_ item: RecentDocuments.Item) {

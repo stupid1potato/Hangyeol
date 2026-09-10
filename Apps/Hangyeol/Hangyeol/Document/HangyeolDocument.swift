@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct HangyeolDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.hangyeolHwpx, .hangyeolHwp] }
+    static var readableContentTypes: [UTType] { UTType.hangyeolReadableTypes }
     static var writableContentTypes: [UTType] { [.hangyeolHwpx] }
 
     var model: DocumentModel
