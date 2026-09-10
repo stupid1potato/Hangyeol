@@ -105,6 +105,9 @@ final class KitRealEngine: HangyeolLiveSession, @unchecked Sendable {
                 defaultValue: "엔진 기능"
             ))
         case .status(let status, let freeze):
+            if freeze == .saveRejected {
+                return .saveRejected
+            }
             let code = freeze?.rawValue
             switch status {
             case .ok:

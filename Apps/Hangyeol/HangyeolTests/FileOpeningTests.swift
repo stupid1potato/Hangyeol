@@ -80,4 +80,21 @@ final class FileOpeningTests: XCTestCase {
         RecentDocuments.shared.clear()
         XCTAssertTrue(RecentDocuments.shared.items.isEmpty)
     }
+
+    func testBookmarkAndAccessRoundTripsTempFile() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hangyeol-bookmark-\(UUID().uuidString).hwpx")
+        XCTAssertTrue(FileManager.default.createFile(atPath: url.path, contents: Data("sample".utf8)))
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        guard let bookmark = try? SecurityScopedBookmarks.bookmarkAndAccess(url) else {
+            throw XCTSkip("security-scoped bookmarks unavailable in this environment")
+        }
+        let resolved = try SecurityScopedBookmarks.resolve(bookmark)
+        XCTAssertEqual(
+            resolved.url.standardizedFileURL.path,
+            url.standardizedFileURL.path
+        )
+        XCTAssertTrue(UTType.hangyeolSupports(url: resolved.url))
+    }
 }

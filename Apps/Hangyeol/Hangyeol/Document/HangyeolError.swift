@@ -8,6 +8,8 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
     case bookmarkFailed(String)
     case unsupportedType(String)
     case notYetImplemented(String)
+    /// HWP write (`hg_save(..., HG_FILE_HWP)` freeze `SAVE_REJECTED`).
+    case saveRejected
 
     var id: String {
         switch self {
@@ -25,6 +27,8 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
             return "unsupportedType:\(name)"
         case .notYetImplemented(let feature):
             return "notYetImplemented:\(feature)"
+        case .saveRejected:
+            return "saveRejected"
         }
     }
 
@@ -74,6 +78,11 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
                 ),
                 feature
             )
+        case .saveRejected:
+            return String(
+                localized: "error.saveRejected",
+                defaultValue: "HWP로는 저장할 수 없습니다. (SAVE_REJECTED)"
+            )
         }
     }
 
@@ -93,6 +102,37 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
             return String(localized: "error.unsupportedType.recovery", defaultValue: "HWP 또는 HWPX 파일을 선택해 주세요.")
         case .notYetImplemented:
             return String(localized: "error.notYetImplemented.recovery", defaultValue: "이후 주 차에 제공될 예정입니다.")
+        case .saveRejected:
+            return String(
+                localized: "error.saveRejected.recovery",
+                defaultValue: "HWPX로 저장하세요."
+            )
+        }
+    }
+
+    /// Map engine/kit failures from open. `saveRejected` is unusual on open.
+    static func mapOpenFailure(_ error: Error) -> HangyeolError {
+        if let hangyeol = error as? HangyeolError {
+            return hangyeol
+        }
+        return KitRealEngine.mapError(error)
+    }
+
+    /// Map engine/kit failures from save. `engineFailed` becomes `saveFailed`.
+    static func mapSaveFailure(_ error: Error) -> HangyeolError {
+        let hangyeol: HangyeolError
+        if let typed = error as? HangyeolError {
+            hangyeol = typed
+        } else {
+            hangyeol = KitRealEngine.mapError(error)
+        }
+        switch hangyeol {
+        case .saveRejected, .saveFailed, .notYetImplemented:
+            return hangyeol
+        case .engineFailed(let message):
+            return .saveFailed(message)
+        default:
+            return .saveFailed(hangyeol.localizedDescription)
         }
     }
 }

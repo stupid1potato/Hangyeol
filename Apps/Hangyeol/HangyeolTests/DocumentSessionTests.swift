@@ -1,0 +1,200 @@
+import UniformTypeIdentifiers
+import XCTest
+@testable import Hangyeol
+
+private final class TaggedEngine: HangyeolEngine, @unchecked Sendable {
+    let tag: String
+
+    init(tag: String) {
+        self.tag = tag
+    }
+
+    func open(data: Data, type: DocumentFileType) throws -> DocumentModel {
+        DocumentModel(
+            metadata: DocumentMetadata(title: tag, sourceType: type),
+            blocks: [.paragraph(ParagraphBlock(text: String(data: data, encoding: .utf8) ?? ""))]
+        )
+    }
+
+    func save(_ model: DocumentModel, as type: DocumentFileType) throws -> Data {
+        Data("\(tag)|\(type.rawValue)|\(model.metadata.title)".utf8)
+    }
+}
+
+private final class FakeLiveEngine: HangyeolLiveSession, @unchecked Sendable {
+    var isOpen: Bool = true
+    var replaceCount = 0
+
+    func open(data: Data, type: DocumentFileType) throws -> DocumentModel {
+        DocumentModel(
+            metadata: DocumentMetadata(title: "live", sourceType: type),
+            blocks: [.paragraph(ParagraphBlock(text: String(data: data, encoding: .utf8) ?? ""))]
+        )
+    }
+
+    func save(_ model: DocumentModel, as type: DocumentFileType) throws -> Data {
+        Data("live-ir|\(type.rawValue)|\(model.plainText)".utf8)
+    }
+
+    func replaceText(find: String, replace: String) throws -> Int {
+        _ = find
+        _ = replace
+        replaceCount += 1
+        return 1
+    }
+
+    func displayModel(type: DocumentFileType, title: String) throws -> DocumentModel {
+        DocumentModel(
+            metadata: DocumentMetadata(title: title, sourceType: type),
+            blocks: [.paragraph(ParagraphBlock(text: "replaced"))]
+        )
+    }
+
+    func saveHwpx(to path: String) throws {
+        try Data("live-hwpx".utf8).write(to: URL(fileURLWithPath: path))
+    }
+}
+
+final class DocumentSessionTests: XCTestCase {
+    override func tearDown() {
+        UserDefaults.standard.removeObject(forKey: EngineClient.useMockFlagKey)
+        EngineClient.resetToDefault()
+        super.tearDown()
+    }
+
+    func testNewDocumentsDoNotShareSessions() {
+        EngineClient.resetToMock()
+        let a = HangyeolDocument()
+        let b = HangyeolDocument()
+        XCTAssertFalse(a.session === b.session)
+        XCTAssertNotEqual(a.session.id, b.session.id)
+    }
+
+    func testFileDocumentCopiesShareTheSameSession() {
+        let session = DocumentSession(engine: MockEngine())
+        let original = HangyeolDocument(model: MockEngine.sampleDocument(), session: session)
+        var copy = original
+        copy.hasUnsavedEdits = true
+        XCTAssertTrue(copy.session === original.session)
+    }
+
+    func testSaveUsesBoundSessionNotProcessSingleton() throws {
+        let sessionA = DocumentSession(engine: TaggedEngine(tag: "A"))
+        let sessionB = DocumentSession(engine: TaggedEngine(tag: "B"))
+        let model = DocumentModel(
+            metadata: DocumentMetadata(title: "doc", sourceType: .hwpx),
+            blocks: [.paragraph(ParagraphBlock(text: "본문"))]
+        )
+        let docA = HangyeolDocument(model: model, session: sessionA)
+        let docB = HangyeolDocument(model: model, session: sessionB)
+
+        EngineClient.current = TaggedEngine(tag: "SINGLETON")
+
+        let dataA = try docA.encodedContents(as: .hwpx)
+        let dataB = try docB.encodedContents(as: .hwpx)
+        XCTAssertEqual(String(data: dataA, encoding: .utf8), "A|hwpx|doc")
+        XCTAssertEqual(String(data: dataB, encoding: .utf8), "B|hwpx|doc")
+        XCTAssertNotEqual(dataA, dataB)
+        XCTAssertNil(sessionA.lastSaveError)
+    }
+
+    func testHwpWritePublishesSaveRejected() {
+        let session = DocumentSession(engine: TaggedEngine(tag: "A"))
+        let doc = HangyeolDocument(model: MockEngine.sampleDocument(), session: session)
+        XCTAssertThrowsError(try doc.encodedContents(as: .hwp)) { error in
+            XCTAssertEqual(error as? HangyeolError, .saveRejected)
+        }
+        XCTAssertEqual(session.lastSaveError, .saveRejected)
+    }
+
+    func testMockSaveThenReopenUsesNewSessionAndRestoresJSON() throws {
+        EngineClient.resetToMock()
+        let original = HangyeolDocument(model: MockEngine.sampleDocument())
+        let data = try original.encodedContents(as: .hwpx)
+
+        let wrapper = FileWrapper(regularFileWithContents: data)
+        wrapper.filename = "roundtrip.hwpx"
+        let reopened = try HangyeolDocument(
+            configuration: HangyeolDocument.ReadConfiguration(
+                contentType: .hangyeolHwpx,
+                file: wrapper
+            )
+        )
+
+        XCTAssertFalse(reopened.session === original.session)
+        XCTAssertEqual(reopened.model.plainText, original.model.plainText)
+        XCTAssertEqual(reopened.model.blocks.count, original.model.blocks.count)
+        XCTAssertFalse(reopened.hasUnsavedEdits)
+        XCTAssertTrue(reopened.session.isUsingMock)
+    }
+
+    func testRealAdapterJSONFallbackBindsMockForThisDocument() throws {
+        let session = DocumentSession(engine: KitRealEngine())
+        XCTAssertFalse(session.isUsingMock)
+
+        let sample = MockEngine.sampleDocument()
+        let json = try JSONEncoder().encode(sample)
+        let model = try session.open(data: json, type: .hwpx)
+
+        XCTAssertTrue(session.isUsingMock)
+        XCTAssertEqual(model.plainText, sample.plainText)
+        XCTAssertNil(session.lastOpenError)
+
+        let saved = try session.save(model, as: .hwpx)
+        let restored = try JSONDecoder().decode(DocumentModel.self, from: saved)
+        XCTAssertEqual(restored.plainText, sample.plainText)
+    }
+
+    func testReplaceMarksDocumentDirtyOnBoundSession() throws {
+        let live = FakeLiveEngine()
+        var document = HangyeolDocument(
+            model: DocumentModel(
+                metadata: DocumentMetadata(title: "제목", sourceType: .hwpx),
+                blocks: [.paragraph(ParagraphBlock(text: "원본"))]
+            ),
+            session: DocumentSession(engine: live)
+        )
+        XCTAssertFalse(document.hasUnsavedEdits)
+        XCTAssertTrue(document.session.canReplace)
+
+        let count = try document.replaceText(find: "원본", replace: "새")
+        XCTAssertEqual(count, 1)
+        XCTAssertEqual(live.replaceCount, 1)
+        XCTAssertTrue(document.hasUnsavedEdits)
+        XCTAssertEqual(document.model.plainText, "replaced")
+        XCTAssertEqual(document.model.metadata.title, "제목")
+    }
+
+    func testOpenLiveSaveDoesNotReencodeAsTaggedJSON() throws {
+        let live = FakeLiveEngine()
+        let session = DocumentSession(engine: live)
+        let model = try session.open(data: Data("허브".utf8), type: .hwpx)
+        let saved = try session.save(model, as: .hwpx)
+        XCTAssertEqual(String(data: saved, encoding: .utf8), "live-ir|hwpx|허브")
+        XCTAssertFalse(session.isUsingMock)
+    }
+
+    func testUntitledLiveWithoutOpenFallsBackToMockJSON() throws {
+        let live = FakeLiveEngine()
+        live.isOpen = false
+        let session = DocumentSession(engine: live)
+        let model = MockEngine.sampleDocument()
+        let data = try session.save(model, as: .hwpx)
+        XCTAssertTrue(session.isUsingMock)
+        let restored = try JSONDecoder().decode(DocumentModel.self, from: data)
+        XCTAssertEqual(restored.plainText, model.plainText)
+    }
+
+    func testMakeEngineAfterResetToMockIgnoresCurrentSingleton() {
+        EngineClient.resetToMock()
+        EngineClient.current = KitRealEngine()
+        XCTAssertTrue(EngineClient.makeEngine() is MockEngine)
+        XCTAssertTrue(DocumentSession().isUsingMock)
+        EngineClient.resetToDefault()
+        if KitRealEngine.isAvailable && !EngineClient.prefersMock {
+            XCTAssertTrue(EngineClient.makeEngine() is KitRealEngine)
+        } else {
+            XCTAssertTrue(EngineClient.makeEngine() is MockEngine)
+        }
+    }
+}

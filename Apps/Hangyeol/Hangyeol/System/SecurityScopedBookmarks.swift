@@ -36,4 +36,11 @@ enum SecurityScopedBookmarks {
     static func stopAccessing(_ url: URL) {
         url.stopAccessingSecurityScopedResource()
     }
+
+    /// Bookmark + start access. Caller keeps the URL for the document lifetime.
+    static func bookmarkAndAccess(_ url: URL) throws -> Data {
+        let data = try bookmark(for: url)
+        _ = startAccessing(url)
+        return data
+    }
 }
