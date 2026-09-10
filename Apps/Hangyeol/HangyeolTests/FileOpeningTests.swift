@@ -29,6 +29,30 @@ final class FileOpeningTests: XCTestCase {
         XCTAssertNotNil(error.recoverySuggestion)
     }
 
+    func testWrongExtPdfIsUnsupportedByHangyeolUTI() {
+        let url = URL(fileURLWithPath: "/tmp/14_wrong_ext_hwpx.pdf")
+        XCTAssertFalse(UTType.hangyeolSupports(url: url))
+        XCTAssertEqual(
+            HangyeolError.unsupportedType(url.lastPathComponent),
+            .unsupportedType("14_wrong_ext_hwpx.pdf")
+        )
+    }
+
+    func testMappedErrorUsesDedicatedOpenCases() {
+        XCTAssertEqual(
+            FileOpening.mappedError(HangyeolError.corrupt),
+            .corrupt
+        )
+        XCTAssertEqual(
+            FileOpening.mappedError(HangyeolError.encrypted),
+            .encrypted
+        )
+        XCTAssertEqual(
+            FileOpening.mappedError(HangyeolError.unsupported),
+            .unsupported
+        )
+    }
+
     @MainActor
     func testOpenPanelFiltersHangyeolTypes() {
         let panel = FileOpening.makeOpenPanel()

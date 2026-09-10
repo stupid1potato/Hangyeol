@@ -82,6 +82,28 @@ final class SaveFailureUXTests: XCTestCase {
 
         XCTAssertFalse(HangyeolError.saveRejected.localizedDescription.contains("SAVE_REJECTED"))
         XCTAssertTrue((HangyeolError.saveRejected.recoverySuggestion ?? "").contains("HWPX"))
+
+        XCTAssertFalse(HangyeolError.encrypted.localizedDescription.contains("ENCRYPTED"))
+        XCTAssertFalse(HangyeolError.corrupt.localizedDescription.contains("CORRUPT"))
+        XCTAssertFalse(HangyeolError.unsupported.localizedDescription.contains("UNSUPPORTED"))
+    }
+
+    func testSessionOpenFailurePresentationMirrorsDismissedID() {
+        let error = HangyeolError.corrupt
+        XCTAssertEqual(
+            SessionOpenFailurePresentation.presentedError(lastOpenError: error, dismissedID: nil),
+            error
+        )
+        XCTAssertNil(
+            SessionOpenFailurePresentation.presentedError(lastOpenError: error, dismissedID: error.id)
+        )
+        XCTAssertEqual(
+            SessionOpenFailurePresentation.presentedError(
+                lastOpenError: .encrypted,
+                dismissedID: error.id
+            ),
+            .encrypted
+        )
     }
 
     @MainActor

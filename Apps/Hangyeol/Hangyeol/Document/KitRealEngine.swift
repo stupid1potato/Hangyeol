@@ -174,19 +174,27 @@ final class KitRealEngine: HangyeolLiveSession, @unchecked Sendable {
                 defaultValue: "엔진 기능"
             ))
         case .status(let status, let freeze):
-            if freeze == .saveRejected {
-                return .saveRejected
+            if let freeze {
+                switch freeze {
+                case .saveRejected:
+                    return .saveRejected
+                case .encrypted:
+                    return .encrypted
+                case .corrupt:
+                    return .corrupt
+                case .unsupportedVersion:
+                    return .unsupported
+                }
             }
-            let code = freeze?.rawValue
             switch status {
             case .ok:
-                return .engineFailed(code ?? error.localizedDescription)
+                return .engineFailed(error.localizedDescription)
             case .unsupported:
-                return .engineFailed(code ?? "UNSUPPORTED")
+                return .unsupported
             case .corrupt:
-                return .engineFailed(code ?? "CORRUPT")
+                return .corrupt
             case .password:
-                return .engineFailed(code ?? "ENCRYPTED")
+                return .encrypted
             }
         }
     }

@@ -120,14 +120,14 @@ enum FileOpening {
         }
     }
 
+    /// Map Kit/engine/open failures onto dedicated `HangyeolError` cases for ErrorSheet.
+    static func mappedError(_ error: Error) -> HangyeolError {
+        HangyeolError.mapOpenFailure(error)
+    }
+
     static func present(_ error: Error) {
-        let hangyeol: HangyeolError
-        if let typed = error as? HangyeolError {
-            hangyeol = typed
-        } else {
-            hangyeol = .engineFailed(error.localizedDescription)
-        }
-        NSApp.presentError(hangyeol)
+        let hangyeol = mappedError(error)
+        NotificationCenter.default.post(name: HangyeolError.presentNotification, object: hangyeol)
     }
 
     nonisolated private static func fileURL(from item: NSSecureCoding?) -> URL? {

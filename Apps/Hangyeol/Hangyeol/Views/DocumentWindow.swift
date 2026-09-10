@@ -19,6 +19,7 @@ struct DocumentWindow: View {
     @State private var lastReplacementCount: Int?
     @State private var replaceStatusFocusToken = 0
     @State private var presentedError: HangyeolError?
+    @State private var dismissedOpenErrorID: String?
     @State private var cellEditError: HangyeolError?
     @State private var lastCellEdit: (table: UInt32, row: Int, col: Int, text: String)?
     @State private var paragraphEditError: HangyeolError?
@@ -41,6 +42,14 @@ struct DocumentWindow: View {
         SessionSaveFailurePresentation.presentedError(
             lastSaveError: document.session.lastSaveError,
             dismissedID: dismissedSaveErrorID
+        )
+    }
+
+    /// Open freeze failures (`encrypted` / `corrupt` / `unsupported` / …) on ErrorSheet.
+    private var sessionOpenError: HangyeolError? {
+        SessionOpenFailurePresentation.presentedError(
+            lastOpenError: document.session.lastOpenError,
+            dismissedID: dismissedOpenErrorID
         )
     }
 
@@ -147,9 +156,9 @@ struct DocumentWindow: View {
                 .disabled(!exportPresentation.canPrint)
             }
         }
-        .sheet(item: $presentedError) { error in
+        .sheet(item: openErrorSheetBinding) { error in
             ErrorSheet(error: error) {
-                presentedError = nil
+                dismissOpenError(error)
             }
         }
         .sheet(item: $cellEditError) { error in
@@ -266,6 +275,16 @@ struct DocumentWindow: View {
                 dismissedSaveErrorID = nil
             }
         }
+        .onReceive(document.session.$lastOpenError) { error in
+            if error == nil {
+                dismissedOpenErrorID = nil
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: HangyeolError.presentNotification)) { note in
+            if let error = note.object as? HangyeolError {
+                presentedError = error
+            }
+        }
     }
 
     private var sessionSaveErrorBinding: Binding<HangyeolError?> {
@@ -277,6 +296,33 @@ struct DocumentWindow: View {
                 }
             }
         )
+    }
+
+    /// `presentedError` (Finder / open panel / sample) or session `lastOpenError`.
+    private var openErrorSheetBinding: Binding<HangyeolError?> {
+        Binding(
+            get: { presentedError ?? sessionOpenError },
+            set: { newValue in
+                if newValue == nil {
+                    if let presentedError {
+                        dismissOpenError(presentedError)
+                    } else if let sessionOpenError {
+                        dismissOpenError(sessionOpenError)
+                    }
+                } else {
+                    presentedError = newValue
+                }
+            }
+        )
+    }
+
+    private func dismissOpenError(_ error: HangyeolError) {
+        if presentedError?.id == error.id {
+            presentedError = nil
+        }
+        if document.session.lastOpenError?.id == error.id {
+            dismissedOpenErrorID = error.id
+        }
     }
 
     private func retryDocumentSave() {
