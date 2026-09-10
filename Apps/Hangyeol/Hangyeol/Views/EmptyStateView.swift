@@ -63,6 +63,7 @@ struct EmptyStateView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .buttonStyle(.plain)
+                        .help(item.url.path)
                     }
                 }
                 Spacer()

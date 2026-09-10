@@ -6,6 +6,7 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
     case engineFailed(String)
     case saveFailed(String)
     case bookmarkFailed(String)
+    case unsupportedType(String)
     case notYetImplemented(String)
 
     var id: String {
@@ -20,6 +21,8 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
             return "saveFailed:\(message)"
         case .bookmarkFailed(let message):
             return "bookmarkFailed:\(message)"
+        case .unsupportedType(let name):
+            return "unsupportedType:\(name)"
         case .notYetImplemented(let feature):
             return "notYetImplemented:\(feature)"
         }
@@ -55,6 +58,14 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
                 ),
                 message
             )
+        case .unsupportedType(let name):
+            return String(
+                format: String(
+                    localized: "error.unsupportedType",
+                    defaultValue: "‘%@’은(는) 열 수 없는 형식입니다."
+                ),
+                name
+            )
         case .notYetImplemented(let feature):
             return String(
                 format: String(
@@ -78,6 +89,8 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
             return String(localized: "error.saveFailed.recovery", defaultValue: "저장 위치를 바꾸거나 권한을 확인하세요.")
         case .bookmarkFailed:
             return String(localized: "error.bookmarkFailed.recovery", defaultValue: "파일을 다시 열어 주세요.")
+        case .unsupportedType:
+            return String(localized: "error.unsupportedType.recovery", defaultValue: "HWP 또는 HWPX 파일을 선택해 주세요.")
         case .notYetImplemented:
             return String(localized: "error.notYetImplemented.recovery", defaultValue: "이후 주 차에 제공될 예정입니다.")
         }

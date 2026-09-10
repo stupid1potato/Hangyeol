@@ -21,6 +21,17 @@ enum DocumentFileType: String, Codable, Sendable, CaseIterable {
             return nil
         }
     }
+
+    init?(url: URL) {
+        switch url.pathExtension.lowercased() {
+        case "hwpx":
+            self = .hwpx
+        case "hwp":
+            self = .hwp
+        default:
+            return nil
+        }
+    }
 }
 
 struct DocumentMetadata: Codable, Equatable, Sendable {

@@ -3,6 +3,9 @@ import SwiftUI
 
 struct HangyeolWindowActions {
     var openSample: () -> Void
+    var openDocument: () -> Void
+    var openRecent: (RecentDocuments.Item) -> Void
+    var clearRecents: () -> Void
     var toggleFindReplace: () -> Void
     var exportPDF: () -> Void
     var printDocument: () -> Void
@@ -13,18 +16,57 @@ private struct HangyeolWindowActionsKey: FocusedValueKey {
     typealias Value = HangyeolWindowActions
 }
 
+private struct HangyeolRecentsKey: FocusedValueKey {
+    typealias Value = [RecentDocuments.Item]
+}
+
 extension FocusedValues {
     var hangyeolActions: HangyeolWindowActions? {
         get { self[HangyeolWindowActionsKey.self] }
         set { self[HangyeolWindowActionsKey.self] = newValue }
     }
+
+    var hangyeolRecents: [RecentDocuments.Item]? {
+        get { self[HangyeolRecentsKey.self] }
+        set { self[HangyeolRecentsKey.self] = newValue }
+    }
 }
 
 struct HangyeolCommands: Commands {
     @FocusedValue(\.hangyeolActions) private var actions
+    @FocusedValue(\.hangyeolRecents) private var recents
 
     var body: some Commands {
+        // DocumentGroup의 New/Open/Open Recent를 교체하지 않습니다.
+        // replacing: .newItem 은 PlatformDocumentController 초기화 중
+        // createDocumentClassIfNeeded 에서 SIGSEGV를 유발합니다.
         CommandGroup(after: .newItem) {
+            Button(L10n.openDocument) {
+                if let openDocument = actions?.openDocument {
+                    openDocument()
+                } else {
+                    FileOpening.presentOpenPanel()
+                }
+            }
+
+            Menu(L10n.recents) {
+                if let recents, !recents.isEmpty {
+                    ForEach(recents) { item in
+                        Button(item.title) {
+                            actions?.openRecent(item)
+                        }
+                    }
+                    Divider()
+                    Button(L10n.clearRecents) {
+                        actions?.clearRecents()
+                    }
+                    .disabled(actions == nil)
+                } else {
+                    Button(L10n.recentsEmpty) {}
+                        .disabled(true)
+                }
+            }
+
             Button(L10n.openSample) {
                 actions?.openSample()
             }

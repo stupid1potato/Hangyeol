@@ -8,11 +8,6 @@ struct HangyeolApp: App {
         DocumentGroup(newDocument: HangyeolDocument()) { file in
             DocumentWindow(document: file.$document, fileURL: file.fileURL)
                 .environment(\.locale, Locale(identifier: "ko_KR"))
-                .onAppear {
-                    if let url = file.fileURL {
-                        RecentDocuments.shared.noteOpened(url)
-                    }
-                }
         }
         .commands {
             HangyeolCommands()
