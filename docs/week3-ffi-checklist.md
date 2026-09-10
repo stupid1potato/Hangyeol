@@ -1,6 +1,6 @@
 # Week-3 FFI integration checklist
 
-HangyeolKit tracks the engine C ABI **without** linking the app or the Rust cdylib.
+HangyeolKit tracks the engine C ABI. Kit **RealEngine** is implemented; the app is **not** linked yet.
 
 `engine/include/hangyeol_engine.h` is the source of truth. Kit copy:
 `Packages/HangyeolKit/Sources/CHangyeolEngine/include/hangyeol_engine.h`.
@@ -10,14 +10,19 @@ HangyeolKit tracks the engine C ABI **without** linking the app or the Rust cdyl
 - [x] **Header sync** — Kit header matches `engine/include/hangyeol_engine.h` on main (symbols, comments, freeze mapping, edit API).
 - [x] Swift FFI stub declarations cover the synced ABI (`hg_plain_text` / `hg_replace_text` / `hg_save_hwpx` / `hg_insert_text` / `hg_delete_range` / `hg_last_error`). Methods still throw `notLinked`; C stubs return `HG_UNSUPPORTED` / `NULL`.
 - [x] C target still compiles with no-op stubs for the new freeze symbols.
-- [x] **Mock stays.** `Apps/Hangyeol` does not import HangyeolKit. No RealEngine, no xcodeproj / XCFramework wiring, no SPM binary link of `engine/`.
+- [x] **Mock stays.** `Apps/Hangyeol` does not import HangyeolKit. No RealEngine in the **app**, no xcodeproj product, no EngineClient swap.
 
-## Next (blocked on XCFramework — do not skip ahead)
+## Kit RealEngine (this package — XCFramework not committed)
 
-- [ ] Wait for / vendor an **XCFramework** built from `engine/` (rustc **≥ 1.89**; CI uses 1.93.1). Procedure: [docs/engine/xcframework.md](engine/xcframework.md) (PR #11).
-- [ ] Implement HangyeolKit **`RealEngine`** over that XCFramework (live `hg_*` calls).
+- [x] Vendor path for a **local** XCFramework (`Packages/HangyeolKit/Vendor/HangyeolEngine.xcframework` or env `HANGYEOL_ENGINE_XCFRAMEWORK`). Gitignored. Mac **재현 절차** is [docs/engine/xcframework.md — 로컬 재현 (2026-09-10)](engine/xcframework.md#로컬-재현-2026-09-10) (PR #14). Linux CI keeps the C stub.
+- [x] HangyeolKit **`RealEngine`**: owns `hg_engine*`; live `hg_*` when the XCFramework is present (`HANGYEOL_ENGINE_LINKED`); `notLinked` fallback when absent. Freeze ↔ Kit mapping in Kit. **App still unlinked.**
+
+## Next (app — do not skip ahead)
+
 - [ ] **Then** link HangyeolKit from `Apps/Hangyeol` (xcodeproj product).
-- [ ] Replace `MockEngine` with `RealEngine` in the app only after the steps above.
+- [ ] Replace `MockEngine` with `RealEngine` in the app only after the step above.
+
+Mac XCFramework 재현(`.a` / `nm hg_*`)은 PR #14 문서에 있다. Kit live-`hg_*` 검증은 이후 단계 (Linux cannot run the Apple binary). 이 PR에 앱 링크·Mock 교체는 넣지 않는다.
 
 ## Contracts that must survive the later link
 
@@ -26,9 +31,9 @@ HangyeolKit tracks the engine C ABI **without** linking the app or the Rust cdyl
 - **Toolchain.** rustc **≥ 1.89** (Hangyeol product pin).
 - **Scope.** DocumentCore parser / serial / edit only. No renderer / layout / WASM UI, no Hangyeol-owned binary parser, no ZIP/XML product writer.
 
-## Forbidden until XCFramework exists
+## Forbidden until the app-link PR
 
 - `Apps/Hangyeol` `import HangyeolKit`
-- `RealEngine` in the app
-- xcodeproj / XCFramework wiring
-- Calling the real engine cdylib from the HangyeolKit package build
+- `RealEngine` in the app / `EngineClient` swap
+- xcodeproj product wiring
+- Committing `.xcframework` / `.a` / `.dylib`

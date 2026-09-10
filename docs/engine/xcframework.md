@@ -209,11 +209,22 @@ XCFramework는 이 크레이트와 **같은** 구현을 담는다. 링크 플래
 
 ## HangyeolKit / Apps 가 나중에 쓰는 법
 
-**지금 하지 말 것:** `Apps/Hangyeol`에 XCFramework를 넣기, `HangyeolKit` import, `RealEngine` 추가, `hg_*` 호출. 라이브 엔진은 **MockEngine**.
+HangyeolKit **`RealEngine`** 은 Kit 패키지에 있다. XCFramework는 **커밋하지 않는다.** 산출·`nm hg_*` 재현은 위 **로컬 재현 (2026-09-10)** (PR #14). Kit Vendor:
 
-나중에 (개발자2):
+```bash
+mkdir -p Packages/HangyeolKit/Vendor
+ln -s /Users/acb/Hangyeol-xcf-build/engine/target/xcframework/HangyeolEngine.xcframework \
+  Packages/HangyeolKit/Vendor/HangyeolEngine.xcframework
+# or: export HANGYEOL_ENGINE_XCFRAMEWORK=…/HangyeolEngine.xcframework
+```
 
-1. `HangyeolEngine.xcframework`를 Xcode *Frameworks, Libraries, and Embedded Content* 또는 SwiftPM `.binaryTarget`으로 연결한다.
+`Package.swift`가 Vendor/env를 보면 `binaryTarget` 또는 링커 플래그로 live `hg_*`를 연결하고, 없으면 C stub / `notLinked`로 남는다. 자세한 내용: `Packages/HangyeolKit/README.md`.
+
+**아직 하지 말 것:** `Apps/Hangyeol`에 HangyeolKit import, xcodeproj product, `EngineClient`를 `RealEngine`으로 교체. 앱 라이브 엔진은 **MockEngine**.
+
+나중에 (앱 링크 PR):
+
+1. HangyeolKit을 Xcode 제품으로 연결한다. Kit이 이미 Vendor XCFramework를 링크한다.
 2. C ABI 정본은 `engine/include/hangyeol_engine.h` (XCFramework `Headers/`에 복사됨). Kit 헤더 미러는 개발자2가 동기화한다.
 3. Rust `staticlib`를 앱에 넣을 때 링커가 `iconv` / `System` 정도를 요구할 수 있다. **렌더러·WASM 라이브러리로 메우지 말 것.**
 4. cdylib를 쓸 경우 `@rpath` + Embed & Sign.
