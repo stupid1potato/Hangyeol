@@ -1,4 +1,4 @@
-//! Hangyeol DocumentCore FFI gates: hub-A replace+clear, F14, F16.
+//! Hangyeol DocumentCore FFI gates: hub-A replace/insert/delete+clear, F14, F16.
 
 use hangyeol_engine::{
     hg_close, hg_delete_range, hg_engine, hg_free_buffer, hg_insert_text, hg_last_error,
@@ -323,36 +323,124 @@ fn set_cell_text_out_of_range_is_corrupt() {
     }
 }
 
-/// Regression: existing freeze helpers still call DocumentCore and do not panic.
+fn save_hwpx_cleared(engine: *mut hg_engine, name: &str) -> PathBuf {
+    let out_dir = testdata_out();
+    std::fs::create_dir_all(&out_dir).unwrap();
+    let artifact = out_dir.join(name);
+    let path = CString::new(artifact.to_str().unwrap()).unwrap();
+    let status = unsafe { hg_save_hwpx(engine, path.as_ptr()) };
+    assert_eq!(status, HgStatus::Ok, "hg_save_hwpx {:?}", last_error_str());
+    let disk = std::fs::read(&artifact).unwrap();
+    assert_eq!(
+        count_linesegarray(&disk),
+        0,
+        "hg_save_hwpx must emit 0 hp:linesegarray"
+    );
+    artifact
+}
+
+fn reopen_plain_text(bytes: &[u8]) -> String {
+    let mut engine: *mut hg_engine = ptr::null_mut();
+    let status = unsafe { hg_open(bytes.as_ptr(), bytes.len(), 0, &mut engine) };
+    assert_eq!(status, HgStatus::Ok, "reopen {:?}", last_error_str());
+    let text = plain_text(engine);
+    unsafe { hg_close(engine) };
+    text
+}
+
+/// Product gate: `hg_insert_text` at known hub-A (section 0, para 0, offset 0).
+/// `hg_plain_text` shows the token; `hg_save_hwpx` clear-before-save ZIP has
+/// **0** `hp:linesegarray`; reopen still contains the token.
 #[test]
-fn insert_text_delete_range_roundtrip() {
+fn hub_a_insert_text_clear_before_save_roundtrip() {
     unsafe {
         let (engine, _) = open_hub_a();
-        let before = plain_text(engine);
-        let token = CString::new("HGINS").unwrap();
+        let token = CString::new("HGINS99").unwrap();
         let status = hg_insert_text(engine, 0, 0, 0, token.as_ptr());
         assert_eq!(status, HgStatus::Ok, "insert {:?}", last_error_str());
-        let mid = plain_text(engine);
-        assert!(
-            mid.contains("HGINS"),
-            "inserted token must appear in plain text, got {mid:?}"
-        );
 
-        let status = hg_delete_range(engine, 0, 0, 0, 5);
-        assert_eq!(status, HgStatus::Ok, "delete {:?}", last_error_str());
-        let after = plain_text(engine);
-        assert_eq!(after, before, "delete should restore pre-insert plain text");
+        let before_save = plain_text(engine);
+        assert!(
+            before_save.contains("HGINS99"),
+            "inserted token before save, got {before_save:?}"
+        );
 
         let saved = save_cleared(engine);
+        let artifact = save_hwpx_cleared(engine, "SimpleTable-inserted.hwpx");
         hg_close(engine);
 
-        let mut engine2: *mut hg_engine = ptr::null_mut();
-        assert_eq!(
-            hg_open(saved.as_ptr(), saved.len(), 0, &mut engine2),
-            HgStatus::Ok
+        let disk = std::fs::read(&artifact).unwrap();
+        assert_eq!(count_linesegarray(&disk), 0);
+
+        let text = reopen_plain_text(&saved);
+        assert!(
+            text.contains("HGINS99"),
+            "reopened plain text must contain inserted token, got {text:?}"
         );
-        let reopened = plain_text(engine2);
-        hg_close(engine2);
-        assert_eq!(reopened, before);
+        assert!(
+            text.contains('2') && text.contains('5'),
+            "other SimpleTable cells must survive, got {text:?}"
+        );
+    }
+}
+
+/// Product gate: `hg_delete_range` of a known hub-A body range (seed token
+/// at section 0 / para 0 / offset 0, length 7). `hg_plain_text` must drop
+/// the token; `hg_save_hwpx` ZIP has **0** `hp:linesegarray`; reopen stays
+/// without the token.
+#[test]
+fn hub_a_delete_range_clear_before_save_roundtrip() {
+    unsafe {
+        let (engine, _) = open_hub_a();
+        let token = CString::new("HGDEL99").unwrap();
+        assert_eq!(
+            hg_insert_text(engine, 0, 0, 0, token.as_ptr()),
+            HgStatus::Ok,
+            "seed {:?}",
+            last_error_str()
+        );
+        assert!(plain_text(engine).contains("HGDEL99"));
+
+        let status = hg_delete_range(engine, 0, 0, 0, 7);
+        assert_eq!(status, HgStatus::Ok, "delete {:?}", last_error_str());
+
+        let before_save = plain_text(engine);
+        assert!(
+            !before_save.contains("HGDEL99"),
+            "deleted token must leave plain text, got {before_save:?}"
+        );
+
+        let saved = save_cleared(engine);
+        let artifact = save_hwpx_cleared(engine, "SimpleTable-deleted.hwpx");
+        hg_close(engine);
+
+        let disk = std::fs::read(&artifact).unwrap();
+        assert_eq!(count_linesegarray(&disk), 0);
+
+        let text = reopen_plain_text(&saved);
+        assert!(
+            !text.contains("HGDEL99"),
+            "reopened plain text must not contain deleted token, got {text:?}"
+        );
+        assert!(
+            text.contains('2') && text.contains('5'),
+            "other SimpleTable cells must survive, got {text:?}"
+        );
+    }
+}
+
+/// Insert/delete failures stay on the freeze four: invalid index → CORRUPT.
+#[test]
+fn insert_delete_out_of_range_is_corrupt() {
+    unsafe {
+        let (engine, _) = open_hub_a();
+        let token = CString::new("x").unwrap();
+        let status = hg_insert_text(engine, 9, 0, 0, token.as_ptr());
+        assert_eq!(status, HgStatus::Corrupt);
+        assert_eq!(last_error_str(), Some("CORRUPT"));
+        let status = hg_delete_range(engine, 0, 99, 0, 1);
+        assert_eq!(status, HgStatus::Corrupt);
+        assert_eq!(last_error_str(), Some("CORRUPT"));
+        hg_close(engine);
     }
 }

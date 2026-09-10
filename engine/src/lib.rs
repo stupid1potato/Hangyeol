@@ -3,6 +3,10 @@
 //! No OLE/HWP binary parser of our own, no ZIP/XML product writer, no
 //! renderer / layout / WASM UI exports. Save always clears `line_segs`
 //! (verified Hangyeol recipe) before `export_hwpx_native`.
+//!
+//! Future (not this crate revision): an image-meta *list* API could walk
+//! `Control::Picture` in document order and return `href` / `img_dim` only.
+//! No BinData extract, no storage experiments. Likely fixture: hub-B.
 
 mod error;
 
@@ -407,6 +411,50 @@ pub fn replace_text(
     Ok(parse_replace_count(&json))
 }
 
+/// Insert UTF-8 `text` at body `(section, paragraph, char_offset)`.
+///
+/// DocumentCore `insert_text_native` only. Invalid index / IR failure →
+/// **CORRUPT** (no new error kinds). Persist with `save_hwpx_bytes` /
+/// `hg_save_hwpx` (clear-before-save).
+pub fn insert_text(
+    core: &mut DocumentCore,
+    section: u32,
+    paragraph: u32,
+    char_offset: u32,
+    text: &str,
+) -> Result<(), HangyeolError> {
+    core.insert_text_native(
+        section as usize,
+        paragraph as usize,
+        char_offset as usize,
+        text,
+    )
+    .map_err(|_| HangyeolError::Corrupt)?;
+    Ok(())
+}
+
+/// Delete `count` characters at body `(section, paragraph, char_offset)`.
+///
+/// DocumentCore `delete_text_native` only. Invalid index / IR failure →
+/// **CORRUPT** (no new error kinds). Persist with `save_hwpx_bytes` /
+/// `hg_save_hwpx` (clear-before-save).
+pub fn delete_range(
+    core: &mut DocumentCore,
+    section: u32,
+    paragraph: u32,
+    char_offset: u32,
+    count: u32,
+) -> Result<(), HangyeolError> {
+    core.delete_text_native(
+        section as usize,
+        paragraph as usize,
+        char_offset as usize,
+        count as usize,
+    )
+    .map_err(|_| HangyeolError::Corrupt)?;
+    Ok(())
+}
+
 /// Clear `line_segs` then `export_hwpx_native`.
 pub fn save_hwpx_bytes(core: &mut DocumentCore) -> Result<Vec<u8>, HangyeolError> {
     export_hwpx_cleared(core)
@@ -563,15 +611,7 @@ pub unsafe extern "C" fn hg_insert_text(
     ffi_status(|| {
         let engine = take_engine(engine)?;
         let text = c_str(text)?;
-        engine
-            .core
-            .insert_text_native(
-                section as usize,
-                paragraph as usize,
-                char_offset as usize,
-                text,
-            )
-            .map_err(|_| HangyeolError::Corrupt)?;
+        insert_text(&mut engine.core, section, paragraph, char_offset, text)?;
         Ok(ok())
     })
 }
@@ -586,15 +626,7 @@ pub unsafe extern "C" fn hg_delete_range(
 ) -> HgStatus {
     ffi_status(|| {
         let engine = take_engine(engine)?;
-        engine
-            .core
-            .delete_text_native(
-                section as usize,
-                paragraph as usize,
-                char_offset as usize,
-                count as usize,
-            )
-            .map_err(|_| HangyeolError::Corrupt)?;
+        delete_range(&mut engine.core, section, paragraph, char_offset, count)?;
         Ok(ok())
     })
 }
@@ -784,5 +816,79 @@ mod tests {
         let reopened = DocumentCore::from_bytes(&exported).expect("reopen");
         let again = collect_plain_text(reopened.document());
         assert!(again.contains("HGSET99"), "got {again:?}");
+    }
+
+    /// Product gate: insert at known (section, para, offset) survives
+    /// clear-before-save + reopen. Token is body text, not a ZIP/XML patch.
+    #[test]
+    fn document_core_insert_text_clear_before_save() {
+        let bytes = hub_a();
+        let mut core = DocumentCore::from_bytes(&bytes).expect("open hub-A");
+        insert_text(&mut core, 0, 0, 0, "HGINS99").expect("insert");
+        let text = collect_plain_text(core.document());
+        assert!(
+            text.contains("HGINS99"),
+            "inserted token must appear in IR, got {text:?}"
+        );
+
+        let exported = export_hwpx_cleared(&mut core).expect("clear-before-save");
+        assert_eq!(
+            count_linesegarray(&exported),
+            0,
+            "hp:linesegarray must be 0"
+        );
+
+        let reopened = DocumentCore::from_bytes(&exported).expect("reopen");
+        let again = collect_plain_text(reopened.document());
+        assert!(
+            again.contains("HGINS99"),
+            "inserted token must survive export, got {again:?}"
+        );
+    }
+
+    /// Product gate: delete a known body range; absence survives
+    /// clear-before-save + reopen.
+    #[test]
+    fn document_core_delete_range_clear_before_save() {
+        let bytes = hub_a();
+        let mut core = DocumentCore::from_bytes(&bytes).expect("open hub-A");
+        insert_text(&mut core, 0, 0, 0, "HGDEL99").expect("seed");
+        assert!(collect_plain_text(core.document()).contains("HGDEL99"));
+
+        delete_range(&mut core, 0, 0, 0, 7).expect("delete");
+        let text = collect_plain_text(core.document());
+        assert!(
+            !text.contains("HGDEL99"),
+            "deleted token must leave IR, got {text:?}"
+        );
+
+        let exported = export_hwpx_cleared(&mut core).expect("clear-before-save");
+        assert_eq!(count_linesegarray(&exported), 0);
+
+        let reopened = DocumentCore::from_bytes(&exported).expect("reopen");
+        let again = collect_plain_text(reopened.document());
+        assert!(
+            !again.contains("HGDEL99"),
+            "deletion must survive export, got {again:?}"
+        );
+        assert!(
+            again.contains('2') && again.contains('5'),
+            "other SimpleTable cells must survive, got {again:?}"
+        );
+    }
+
+    #[test]
+    fn insert_delete_out_of_range_is_corrupt() {
+        let bytes = hub_a();
+        let mut core = DocumentCore::from_bytes(&bytes).expect("open hub-A");
+        assert_eq!(
+            insert_text(&mut core, 9, 0, 0, "x"),
+            Err(HangyeolError::Corrupt)
+        );
+        assert_eq!(
+            delete_range(&mut core, 0, 99, 0, 1),
+            Err(HangyeolError::Corrupt)
+        );
+        assert_eq!(HangyeolError::Corrupt.as_str(), "CORRUPT");
     }
 }

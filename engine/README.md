@@ -22,7 +22,9 @@ This header is a **superset** of HangyeolKit
 (Kit `hg_open` / `hg_save` / `hg_free_buffer` / `hg_close`) plus kickoff freeze
 edit symbols (`hg_plain_text` / `hg_replace_text` / `hg_save_hwpx` /
 `hg_insert_text` / `hg_delete_range` / `hg_list_tables` / `hg_set_cell_text` /
-`hg_last_error`). Same names — not a third scheme.
+`hg_last_error`). Same names — not a third scheme. `hg_insert_text` /
+`hg_delete_range` are product gates (known para/offset → `hg_plain_text` →
+`hg_save_hwpx` clear-before-save → 0 `hp:linesegarray` → reopen).
 
 `hg_list_tables` / `hg_set_cell_text` walk DocumentCore IR only. Kit maps
 `hg_table_info.index` + `rows`/`cols` onto TableBlock cell addressing.
@@ -61,11 +63,15 @@ cargo test --manifest-path engine/Cargo.toml
 |----------|------|
 | Owner Downloads (already copied) | `~/Downloads/SimpleTable-rhwp-replaced-cleared.hwpx` |
 | Repo generate path (gitignored) | `engine/testdata/out/SimpleTable-cleared-replaced.hwpx` |
+| Insert product gate (gitignored) | `engine/testdata/out/SimpleTable-inserted.hwpx` |
+| Delete product gate (gitignored) | `engine/testdata/out/SimpleTable-deleted.hwpx` |
 
-Regenerate the repo file without the full suite:
+Regenerate without the full suite:
 
 ```bash
 cargo test --manifest-path engine/Cargo.toml hub_a_replace_clear_before_save_roundtrip -- --exact
+cargo test --manifest-path engine/Cargo.toml hub_a_insert_text_clear_before_save_roundtrip -- --exact
+cargo test --manifest-path engine/Cargo.toml hub_a_delete_range_clear_before_save_roundtrip -- --exact
 ```
 
 The derived HWPX is Apache-2.0 (hub-A / hwpxlib). It is **not** committed. Hangul open smoke is Mac-manual on the Downloads copy (or copy the generated file onto the Mac).
@@ -74,6 +80,8 @@ The derived HWPX is Apache-2.0 (hub-A / hwpxlib). It is **not** committed. Hangu
 
 macOS `aarch64-apple-darwin` (Mac host required; Linux CI cannot emit Apple binaries):
 [docs/engine/xcframework.md](../docs/engine/xcframework.md).
+When `hg_*` symbols change, rebuild Vendor locally — **do not commit binaries**:
+[docs/engine/vendor-rebuild.md](../docs/engine/vendor-rebuild.md).
 If `libhangyeol_engine.a` lands only under `release/deps/`, copy or symlink it to `release/` before `xcodebuild -create-xcframework` (`engine/scripts/copy-staticlib-to-release.sh`).
 
 ## Layout
@@ -84,7 +92,7 @@ engine/
   src/lib.rs          # FFI + DocumentCore wrapper
   src/error.rs        # freeze ↔ Kit mapping
   include/hangyeol_engine.h
-  tests/gates.rs      # hub-A replace/clear, set-cell, insert/delete, F14, F16
+  tests/gates.rs      # hub-A replace/insert/delete+clear, set-cell, F14, F16
   testdata/out/       # gitignored generated HWPX
   scripts/copy-staticlib-to-release.sh  # deps → release .a (macOS XCFramework)
 ```
