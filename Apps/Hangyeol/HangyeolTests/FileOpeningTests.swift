@@ -38,6 +38,7 @@ final class FileOpeningTests: XCTestCase {
         )
     }
 
+    @MainActor
     func testMappedErrorUsesDedicatedOpenCases() {
         XCTAssertEqual(
             FileOpening.mappedError(HangyeolError.corrupt),

@@ -163,6 +163,7 @@ final class HangyeolOpenFailureTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testFileOpeningMapsKitFreezeToDedicatedCases() {
         XCTAssertEqual(
             FileOpening.mappedError(HangyeolKitError.status(.corrupt, freeze: .corrupt)),
