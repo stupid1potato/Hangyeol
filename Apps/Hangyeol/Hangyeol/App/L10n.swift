@@ -17,6 +17,7 @@ enum L10n {
     static let clearRecents = String(localized: "action.clearRecents", defaultValue: "최근 항목 지우기")
     static let dropToOpen = String(localized: "action.dropToOpen", defaultValue: "놓아서 열기")
     static let exportPDF = String(localized: "action.exportPDF", defaultValue: "PDF로 보내기…")
+    static let exportPDFConfirm = String(localized: "action.exportPDFConfirm", defaultValue: "PDF로 보내기")
     static let printDocument = String(localized: "action.print", defaultValue: "인쇄…")
     static let find = String(localized: "action.find", defaultValue: "찾기…")
     static let findPlaceholder = String(localized: "find.query", defaultValue: "찾기")
@@ -39,6 +40,7 @@ enum L10n {
     static let errorTitle = String(localized: "sheet.error.title", defaultValue: "작업을 완료하지 못했습니다")
     static let saveFailureTitle = String(localized: "sheet.saveFailure.title", defaultValue: "문서를 저장하지 못했습니다")
     static let exportFailureTitle = String(localized: "sheet.exportFailure.title", defaultValue: "PDF로 보내지 못했습니다")
+    static let printFailureTitle = String(localized: "sheet.printFailure.title", defaultValue: "인쇄하지 못했습니다")
     static let reopenFailureTitle = String(localized: "sheet.reopenFailure.title", defaultValue: "최근 문서를 다시 열지 못했습니다")
     static let recents = String(localized: "empty.recents", defaultValue: "최근 문서")
     static let recentsEmpty = String(
@@ -54,6 +56,38 @@ enum L10n {
         localized: "sheet.saveFailure.retryHint",
         defaultValue: "같은 위치에 다시 저장합니다."
     )
+    static let exportFailureRetryHint = String(
+        localized: "sheet.exportFailure.retryHint",
+        defaultValue: "같은 위치에 다시 보냅니다."
+    )
+    static let exportEmptyRetryHint = String(
+        localized: "sheet.exportEmpty.retryHint",
+        defaultValue: "문서를 연 뒤 다시 보냅니다."
+    )
+    static let printEmptyRetryHint = String(
+        localized: "sheet.printEmpty.retryHint",
+        defaultValue: "문서를 연 뒤 다시 인쇄합니다."
+    )
+    static let exportPDFMessage = String(
+        localized: "export.pdf.message",
+        defaultValue: "본문을 PDF 파일로 보냅니다."
+    )
+    static let exportProgressStatus = String(
+        localized: "export.progress.status",
+        defaultValue: "본문을 PDF로 보내는 중"
+    )
+    static let exportEmptyHint = String(
+        localized: "export.empty.hint",
+        defaultValue: "보낼 본문이 없습니다. 파일을 열거나 샘플 문서를 여세요."
+    )
+    static let printEmptyHint = String(
+        localized: "print.empty.hint",
+        defaultValue: "인쇄할 본문이 없습니다. 파일을 열거나 샘플 문서를 여세요."
+    )
+
+    static func exportProgressA11y(filename: String, status: String) -> String {
+        "\(filename), \(status)"
+    }
     static let reopenRetryHint = String(
         localized: "sheet.reopenFailure.retryHint",
         defaultValue: "최근 문서를 다시 엽니다."
@@ -82,7 +116,6 @@ enum L10n {
         localized: "help.body",
         defaultValue: "한결은 macOS에서 HWP/HWPX 문서를 엽니다. 파일 → 열기… 를 누르거나 파일을 창이나 Dock 아이콘에 놓아 문서를 여세요."
     )
-    static let printStub = String(localized: "print.stub", defaultValue: "인쇄는 아직 지원하지 않습니다.")
 
     static let paragraphEditLiveNote = String(
         localized: "paragraph.edit.live",

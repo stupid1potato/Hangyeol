@@ -11,6 +11,7 @@ struct DocumentWindow: View {
     @Environment(\.openDocument) private var openDocument
     @ObservedObject private var recents = RecentDocuments.shared
     @StateObject private var exportFailure = RetryableFailure()
+    @StateObject private var printFailure = RetryableFailure()
     @StateObject private var reopenFailure = RetryableFailure()
     @State private var showFindReplace = false
     @State private var findQuery = ""
@@ -26,6 +27,7 @@ struct DocumentWindow: View {
     @State private var showHelp = false
     @State private var isDropTargeted = false
     @State private var dismissedSaveErrorID: String?
+    @State private var exportProgress: ExportProgressPresentation?
 
     private var chrome: DocumentChromeState {
         DocumentChromeState.make(
@@ -49,6 +51,10 @@ struct DocumentWindow: View {
             lastReplacementCount: lastReplacementCount,
             statusFocusToken: replaceStatusFocusToken
         )
+    }
+
+    private var exportPresentation: ExportPresentation {
+        ExportPresentation.make(isEmpty: document.model.isEmpty)
     }
 
     var body: some View {
@@ -129,14 +135,16 @@ struct DocumentWindow: View {
                 Button(action: exportPDF) {
                     Label(L10n.exportPDF, systemImage: "arrow.up.doc")
                 }
-                .help(L10n.exportPDF)
+                .help(exportPresentation.exportHelp)
+                .accessibilityHint(exportPresentation.exportHelp)
+                .disabled(!exportPresentation.canExport)
 
-                Button {
-                    PrintCoordinator.print(document.model)
-                } label: {
+                Button(action: printDocument) {
                     Label(L10n.printDocument, systemImage: "printer")
                 }
-                .help(L10n.printDocument)
+                .help(exportPresentation.printHelp)
+                .accessibilityHint(exportPresentation.printHelp)
+                .disabled(!exportPresentation.canPrint)
             }
         }
         .sheet(item: $presentedError) { error in
@@ -178,11 +186,24 @@ struct DocumentWindow: View {
             SaveFailureSheet(
                 error: error,
                 title: L10n.exportFailureTitle,
-                retryTitle: L10n.retry,
-                retryHint: L10n.saveFailureRetryHint,
+                retryTitle: ExportPresentation.retryTitle(for: error),
+                retryHint: ExportPresentation.retryHint(for: error),
                 onRetry: { exportFailure.retry() },
                 onDismiss: { exportFailure.dismiss() }
             )
+        }
+        .sheet(item: printFailure.sheetBinding) { error in
+            SaveFailureSheet(
+                error: error,
+                title: L10n.printFailureTitle,
+                retryTitle: L10n.openDocument,
+                retryHint: L10n.printEmptyRetryHint,
+                onRetry: { printFailure.retry() },
+                onDismiss: { printFailure.dismiss() }
+            )
+        }
+        .sheet(item: $exportProgress) { presentation in
+            ExportProgressSheet(presentation: presentation)
         }
         .sheet(item: reopenFailure.sheetBinding) { error in
             ErrorSheet(
@@ -206,8 +227,12 @@ struct DocumentWindow: View {
             clearRecents: { recents.clear() },
             toggleFindReplace: { showFindReplace.toggle() },
             exportPDF: exportPDF,
-            printDocument: { PrintCoordinator.print(document.model) },
-            showHelp: { showHelp = true }
+            printDocument: printDocument,
+            showHelp: { showHelp = true },
+            canExportPDF: exportPresentation.canExport,
+            canPrint: exportPresentation.canPrint,
+            exportHelp: exportPresentation.exportHelp,
+            printHelp: exportPresentation.printHelp
         ))
         .focusedSceneValue(\.hangyeolRecents, recents.items)
         .onAppear {
@@ -395,21 +420,48 @@ struct DocumentWindow: View {
     }
 
     private func exportPDF() {
+        guard exportPresentation.canExport else {
+            exportFailure.present(.exportEmptyDocument, retry: presentOpenPanel)
+            return
+        }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.pdf]
         panel.canCreateDirectories = true
         panel.isExtensionHidden = false
         panel.title = L10n.exportPDF
+        panel.prompt = L10n.exportPDFConfirm
+        panel.message = L10n.exportPDFMessage
         panel.nameFieldStringValue = "\(document.model.displayTitle).pdf"
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
-            do {
-                try PDFExporter.export(document.model, to: url)
-            } catch let error as HangyeolError {
-                exportFailure.present(error, retry: exportPDF)
-            } catch {
-                exportFailure.present(.saveFailed(error.localizedDescription), retry: exportPDF)
+            let filename = url.lastPathComponent
+            exportProgress = .make(filename: filename)
+            DispatchQueue.main.async {
+                switch ExportFlow.export(isEmpty: document.model.isEmpty, perform: {
+                    try PDFExporter.export(document.model, to: url)
+                }) {
+                case .skippedEmpty:
+                    exportProgress = nil
+                    exportFailure.present(.exportEmptyDocument, retry: presentOpenPanel)
+                case .exported:
+                    exportProgress = nil
+                case .failed(let error):
+                    exportProgress = nil
+                    exportFailure.present(error, retry: exportPDF)
+                }
             }
+        }
+    }
+
+    private func printDocument() {
+        switch PrintFlow.prepare(
+            isEmpty: document.model.isEmpty,
+            plainText: document.model.plainText
+        ) {
+        case .skippedEmpty:
+            printFailure.present(.printEmptyDocument, retry: presentOpenPanel)
+        case .ready(let text):
+            PrintCoordinator.print(text: text, jobTitle: document.model.displayTitle)
         }
     }
 }

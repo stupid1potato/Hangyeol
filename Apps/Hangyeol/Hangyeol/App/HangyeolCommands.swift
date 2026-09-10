@@ -10,6 +10,10 @@ struct HangyeolWindowActions {
     var exportPDF: () -> Void
     var printDocument: () -> Void
     var showHelp: () -> Void
+    var canExportPDF: Bool
+    var canPrint: Bool
+    var exportHelp: String
+    var printHelp: String
 }
 
 private struct HangyeolWindowActionsKey: FocusedValueKey {
@@ -77,12 +81,16 @@ struct HangyeolCommands: Commands {
             Button(L10n.exportPDF) {
                 actions?.exportPDF()
             }
-            .disabled(actions == nil)
+            .disabled(actions?.canExportPDF != true)
+            .help(actions?.exportHelp ?? L10n.exportEmptyHint)
+            .accessibilityHint(actions?.exportHelp ?? L10n.exportEmptyHint)
             Button(L10n.printDocument) {
                 actions?.printDocument()
             }
             .keyboardShortcut("p", modifiers: .command)
-            .disabled(actions == nil)
+            .disabled(actions?.canPrint != true)
+            .help(actions?.printHelp ?? L10n.printEmptyHint)
+            .accessibilityHint(actions?.printHelp ?? L10n.printEmptyHint)
         }
 
         CommandGroup(after: .pasteboard) {
