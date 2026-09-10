@@ -129,10 +129,20 @@ final class HelpUXTests: XCTestCase {
         let help = HelpPresentation.make()
         XCTAssertEqual(help.title, L10n.help)
         XCTAssertEqual(help.limitsTitle, "알려진 한계")
-        XCTAssertEqual(help.limits.count, 7)
+        XCTAssertEqual(help.limits.count, 9)
         XCTAssertEqual(
             help.limits.map(\.id),
-            ["layout", "hwp-save", "encrypted", "open-errors", "edit-subset", "pdf-print", "mvp-out"]
+            [
+                "layout",
+                "hwp-save",
+                "encrypted",
+                "open-errors",
+                "unsupported-formats",
+                "edit-subset",
+                "images",
+                "pdf-print",
+                "mvp-out"
+            ]
         )
 
         XCTAssertTrue(help.body.contains("열기"))
@@ -141,15 +151,27 @@ final class HelpUXTests: XCTestCase {
 
         let joined = help.limits.map(\.text).joined(separator: " ")
         XCTAssertTrue(joined.contains("조판"))
+        XCTAssertTrue(joined.contains("한/글"))
         XCTAssertTrue(joined.contains("WYSIWYG"))
         XCTAssertTrue(joined.contains("구조화"))
         XCTAssertTrue(joined.contains(".hwp"))
         XCTAssertTrue(joined.contains("HWPX"))
         XCTAssertTrue(joined.contains("암호"))
+        XCTAssertTrue(joined.contains("풀지"))
         XCTAssertTrue(joined.contains("손상"))
+        XCTAssertTrue(joined.contains("빈 파일"))
+        XCTAssertTrue(joined.contains("오류 안내"))
+        XCTAssertTrue(joined.contains("DRM"))
+        XCTAssertTrue(joined.contains("HWP 3.x"))
+        XCTAssertTrue(joined.contains("HML"))
         XCTAssertTrue(joined.contains("표 칸"))
         XCTAssertTrue(joined.contains("문단"))
+        XCTAssertTrue(joined.contains("행"))
+        XCTAssertTrue(joined.contains("머리글"))
+        XCTAssertTrue(joined.contains("그림"))
+        XCTAssertTrue(joined.contains("남을 수 있습니다"))
         XCTAssertTrue(joined.contains("인쇄"))
+        XCTAssertTrue(joined.contains("자동 업데이트"))
         XCTAssertTrue(joined.contains("미리보기"))
         XCTAssertFalse(joined.contains("SAVE_REJECTED"))
         XCTAssertFalse(joined.contains("HangyeolError"))
@@ -157,8 +179,28 @@ final class HelpUXTests: XCTestCase {
         XCTAssertFalse(joined.localizedCaseInsensitiveContains("Quick Look"))
         XCTAssertFalse(joined.contains("HANGYEOL_USE_MOCK"))
         XCTAssertFalse(joined.contains("KitRealEngine"))
+        XCTAssertFalse(joined.contains("HG_"))
+        XCTAssertFalse(joined.localizedCaseInsensitiveContains("freeze"))
+        XCTAssertFalse(joined.contains("BinData"))
+        XCTAssertFalse(joined.contains("XCFramework"))
+        XCTAssertFalse(joined.contains("FFI"))
+        XCTAssertFalse(joined.contains("Mock"))
+        XCTAssertFalse(joined.contains("keep-on-save"))
         XCTAssertEqual(HelpPresentation.sheetIdentifier, "help-sheet")
         XCTAssertEqual(HelpPresentation.limitsIdentifier, "help-known-limits")
+    }
+
+    func testHelpSheetKeepsPrimaryCopyAndLimitIdentifiers() throws {
+        let sheet = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Hangyeol/Sheets/HelpSheet.swift")
+        let source = try String(contentsOf: sheet, encoding: .utf8)
+        XCTAssertTrue(source.contains(".foregroundStyle(.primary)"))
+        XCTAssertFalse(source.contains(".foregroundStyle(.secondary)"))
+        XCTAssertTrue(source.contains("help-limit-\\(item.id)"))
+        XCTAssertTrue(source.contains("HelpPresentation.limitsIdentifier"))
+        XCTAssertTrue(source.contains("HelpPresentation.sheetIdentifier"))
     }
 
     func testHelpMenuExposesKnownLimits() throws {

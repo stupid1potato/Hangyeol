@@ -195,11 +195,11 @@ enum L10n {
     )
     static let helpLimitLayout = String(
         localized: "help.limits.layout",
-        defaultValue: "조판은 한/글과 픽셀 단위로 같지 않습니다. 보이는 대로 편집(WYSIWYG)은 없고, 본문과 표를 구조화해 보여 줍니다."
+        defaultValue: "조판은 한/글과 같지 않습니다. 보이는 대로 편집(WYSIWYG)은 없고, 본문과 표를 구조화해 보여 줍니다."
     )
     static let helpLimitHwpSave = String(
         localized: "help.limits.hwpSave",
-        defaultValue: ".hwp는 읽을 수 있고, 저장은 HWPX로만 됩니다."
+        defaultValue: ".hwp는 열 수 있습니다. 저장은 HWPX로만 됩니다."
     )
     static let helpLimitEncrypted = String(
         localized: "help.limits.encrypted",
@@ -207,15 +207,23 @@ enum L10n {
     )
     static let helpLimitOpenErrors = String(
         localized: "help.limits.openErrors",
-        defaultValue: "손상되었거나, 이 버전·형식이 아니거나, 고른 파일이 잘못되면 안내가 열립니다."
+        defaultValue: "손상된 파일, 지원하지 않는 버전, 잘못된 형식, 빈 파일은 열 수 없습니다. 그때는 오류 안내가 열립니다."
+    )
+    static let helpLimitUnsupportedFormats = String(
+        localized: "help.limits.unsupportedFormats",
+        defaultValue: "DRM으로 보호된 문서, 옛 HWP 3.x, HML 파일은 열 수 없습니다."
     )
     static let helpLimitEditSubset = String(
         localized: "help.limits.editSubset",
-        defaultValue: "표 칸과 문단만 고칠 수 있습니다."
+        defaultValue: "문단과 표 칸의 글자만 고칠 수 있습니다. 행·열을 더하거나 지우거나 합치지 않고, 머리글·바닥글·수식·도형은 편집하지 않습니다."
+    )
+    static let helpLimitImages = String(
+        localized: "help.limits.images",
+        defaultValue: "그림은 화면에 보이지 않고, 넣거나 지울 수도 없습니다. HWPX로 저장하면 문서에 있던 그림은 파일에 그대로 남을 수 있습니다."
     )
     static let helpLimitPdfPrint = String(
         localized: "help.limits.pdfPrint",
-        defaultValue: "PDF와 인쇄는 본문·표 글자만 보냅니다. 한/글 조판 그대로 찍지 않습니다."
+        defaultValue: "PDF와 인쇄는 본문과 표 칸의 글자만 보냅니다. 한/글 조판 그대로 찍지 않습니다."
     )
     static let helpLimitMvpOut = String(
         localized: "help.limits.mvpOut",
