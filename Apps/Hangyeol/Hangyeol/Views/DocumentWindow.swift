@@ -5,13 +5,12 @@ import UniformTypeIdentifiers
 struct DocumentWindow: View {
     @Binding var document: HangyeolDocument
     var fileURL: URL?
-    /// When Document/EngineClient publishes session dirty state, pass it here.
-    /// Until then, chrome binds to `NSWindow.isDocumentEdited`.
+    /// Preview / tests. Live windows use `document.hasUnsavedEdits`.
     var isEditedOverride: Bool? = nil
 
     @Environment(\.openDocument) private var openDocument
     @ObservedObject private var recents = RecentDocuments.shared
-    @StateObject private var saveFailure = RetryableFailure()
+    @StateObject private var exportFailure = RetryableFailure()
     @StateObject private var reopenFailure = RetryableFailure()
     @State private var showFindReplace = false
     @State private var findQuery = ""
@@ -19,13 +18,20 @@ struct DocumentWindow: View {
     @State private var presentedError: HangyeolError?
     @State private var showHelp = false
     @State private var isDropTargeted = false
-    @State private var windowEdited = false
+    @State private var dismissedSaveErrorID: String?
 
     private var chrome: DocumentChromeState {
         DocumentChromeState.make(
             title: document.model.displayTitle,
             isEditedOverride: isEditedOverride,
-            windowEdited: windowEdited
+            hasUnsavedEdits: document.hasUnsavedEdits
+        )
+    }
+
+    private var sessionSaveError: HangyeolError? {
+        SessionSaveFailurePresentation.presentedError(
+            lastSaveError: document.session.lastSaveError,
+            dismissedID: dismissedSaveErrorID
         )
     }
 
@@ -56,7 +62,6 @@ struct DocumentWindow: View {
         }
         .frame(minWidth: 720, minHeight: 480)
         .background(Color(nsColor: .windowBackgroundColor))
-        .background(DocumentEditedProbe(isEdited: $windowEdited))
         .overlay {
             if isDropTargeted {
                 RoundedRectangle(cornerRadius: 12)
@@ -116,14 +121,24 @@ struct DocumentWindow: View {
                 presentedError = nil
             }
         }
-        .sheet(item: saveFailure.sheetBinding) { error in
+        .sheet(item: sessionSaveErrorBinding) { error in
+            SaveFailureSheet(
+                error: error,
+                title: L10n.saveFailureTitle,
+                retryTitle: L10n.retrySave,
+                retryHint: L10n.saveFailureRetryHint,
+                onRetry: retryDocumentSave,
+                onDismiss: { dismissedSaveErrorID = error.id }
+            )
+        }
+        .sheet(item: exportFailure.sheetBinding) { error in
             SaveFailureSheet(
                 error: error,
                 title: L10n.exportFailureTitle,
                 retryTitle: L10n.retry,
                 retryHint: L10n.saveFailureRetryHint,
-                onRetry: { saveFailure.retry() },
-                onDismiss: { saveFailure.dismiss() }
+                onRetry: { exportFailure.retry() },
+                onDismiss: { exportFailure.dismiss() }
             )
         }
         .sheet(item: reopenFailure.sheetBinding) { error in
@@ -163,6 +178,26 @@ struct DocumentWindow: View {
                 recents.noteOpened(url)
             }
         }
+        .onReceive(document.session.$lastSaveError) { error in
+            if error == nil {
+                dismissedSaveErrorID = nil
+            }
+        }
+    }
+
+    private var sessionSaveErrorBinding: Binding<HangyeolError?> {
+        Binding(
+            get: { sessionSaveError },
+            set: { newValue in
+                if newValue == nil, let id = document.session.lastSaveError?.id {
+                    dismissedSaveErrorID = id
+                }
+            }
+        )
+    }
+
+    private func retryDocumentSave() {
+        NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
     }
 
     private func replaceInEngine() {
@@ -222,9 +257,9 @@ struct DocumentWindow: View {
             do {
                 try PDFExporter.export(document.model, to: url)
             } catch let error as HangyeolError {
-                saveFailure.present(error, retry: exportPDF)
+                exportFailure.present(error, retry: exportPDF)
             } catch {
-                saveFailure.present(.saveFailed(error.localizedDescription), retry: exportPDF)
+                exportFailure.present(.saveFailed(error.localizedDescription), retry: exportPDF)
             }
         }
     }

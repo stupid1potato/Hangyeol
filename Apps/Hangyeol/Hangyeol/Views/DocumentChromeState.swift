@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Window-chrome title + edited badge. Binds to `NSWindow.isDocumentEdited`
-/// (FileDocument Equatable) until Document/EngineClient publishes `isEdited`.
+/// Window-chrome title + edited badge, bound to `HangyeolDocument.hasUnsavedEdits`.
 struct DocumentChromeState: Equatable {
     var title: String
     var isEdited: Bool
@@ -17,10 +16,10 @@ struct DocumentChromeState: Equatable {
         return title
     }
 
-    static func make(title: String, isEditedOverride: Bool?, windowEdited: Bool) -> DocumentChromeState {
+    static func make(title: String, isEditedOverride: Bool?, hasUnsavedEdits: Bool) -> DocumentChromeState {
         DocumentChromeState(
             title: title,
-            isEdited: isEditedOverride ?? windowEdited
+            isEdited: isEditedOverride ?? hasUnsavedEdits
         )
     }
 }

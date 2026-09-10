@@ -1,9 +1,8 @@
 import Foundation
 import SwiftUI
 
-/// UI-only presentation state for Retry/Cancel sheets.
-/// Does not own an engine session; the caller supplies the retry closure
-/// (PDF export today; document save when HangyeolDocument publishes a failure).
+/// UI-only presentation state for Retry/Cancel sheets (PDF export).
+/// Document save failures bind to `DocumentSession.lastSaveError` instead.
 @MainActor
 final class RetryableFailure: ObservableObject {
     @Published private(set) var error: HangyeolError?
@@ -38,6 +37,15 @@ final class RetryableFailure: ObservableObject {
     func dismiss() {
         error = nil
         retryHandler = nil
+    }
+}
+
+/// Presents `DocumentSession.lastSaveError` without a parallel error store.
+enum SessionSaveFailurePresentation {
+    static func presentedError(lastSaveError: HangyeolError?, dismissedID: String?) -> HangyeolError? {
+        guard let error = lastSaveError else { return nil }
+        if dismissedID == error.id { return nil }
+        return error
     }
 }
 

@@ -35,9 +35,9 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
     var errorDescription: String? {
         switch self {
         case .emptyFile:
-            return String(localized: "error.emptyFile", defaultValue: "파일 내용이 비어 있습니다.")
+            return String(localized: "error.emptyFile", defaultValue: "파일이 비어 있어 열 수 없습니다.")
         case .sampleNotFound:
-            return String(localized: "error.sampleNotFound", defaultValue: "샘플 문서를 찾을 수 없습니다.")
+            return String(localized: "error.sampleNotFound", defaultValue: "샘플 문서를 찾지 못했습니다.")
         case .engineFailed(let message):
             return String(
                 format: String(
@@ -50,7 +50,7 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
             return String(
                 format: String(
                     localized: "error.saveFailed",
-                    defaultValue: "저장하지 못했습니다. %@"
+                    defaultValue: "문서를 저장하지 못했습니다. %@"
                 ),
                 message
             )
@@ -58,7 +58,7 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
             return String(
                 format: String(
                     localized: "error.bookmarkFailed",
-                    defaultValue: "파일 접근 권한을 유지하지 못했습니다. %@"
+                    defaultValue: "최근 문서에 접근하지 못했습니다. %@"
                 ),
                 message
             )
@@ -66,7 +66,7 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
             return String(
                 format: String(
                     localized: "error.unsupportedType",
-                    defaultValue: "‘%@’은(는) 열 수 없는 형식입니다."
+                    defaultValue: "‘%@’ 형식을 열 수 없습니다."
                 ),
                 name
             )
@@ -81,7 +81,7 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
         case .saveRejected:
             return String(
                 localized: "error.saveRejected",
-                defaultValue: "HWP로는 저장할 수 없습니다. (SAVE_REJECTED)"
+                defaultValue: "HWP로는 저장할 수 없습니다."
             )
         }
     }
@@ -89,19 +89,19 @@ enum HangyeolError: LocalizedError, Identifiable, Equatable {
     var recoverySuggestion: String? {
         switch self {
         case .emptyFile:
-            return String(localized: "error.emptyFile.recovery", defaultValue: "다른 파일을 선택해 보세요.")
+            return String(localized: "error.emptyFile.recovery", defaultValue: "다른 HWP 또는 HWPX 파일을 선택하세요.")
         case .sampleNotFound:
-            return String(localized: "error.sampleNotFound.recovery", defaultValue: "앱을 다시 설치하거나 새 문서로 시작하세요.")
+            return String(localized: "error.sampleNotFound.recovery", defaultValue: "앱을 다시 설치하거나 새 문서를 만드세요.")
         case .engineFailed:
-            return String(localized: "error.engineFailed.recovery", defaultValue: "파일이 손상되지 않았는지 확인하세요.")
+            return String(localized: "error.engineFailed.recovery", defaultValue: "파일이 손상됐는지 확인한 뒤 다시 여세요.")
         case .saveFailed:
-            return String(localized: "error.saveFailed.recovery", defaultValue: "저장 위치를 바꾸거나 권한을 확인하세요.")
+            return String(localized: "error.saveFailed.recovery", defaultValue: "저장 위치를 바꾸거나 폴더 권한을 확인한 뒤 다시 저장하세요.")
         case .bookmarkFailed:
-            return String(localized: "error.bookmarkFailed.recovery", defaultValue: "파일을 다시 열어 주세요.")
+            return String(localized: "error.bookmarkFailed.recovery", defaultValue: "파일을 다시 열어 접근 권한을 허용하세요.")
         case .unsupportedType:
-            return String(localized: "error.unsupportedType.recovery", defaultValue: "HWP 또는 HWPX 파일을 선택해 주세요.")
+            return String(localized: "error.unsupportedType.recovery", defaultValue: "HWP 또는 HWPX 파일을 선택하세요.")
         case .notYetImplemented:
-            return String(localized: "error.notYetImplemented.recovery", defaultValue: "이후 주 차에 제공될 예정입니다.")
+            return String(localized: "error.notYetImplemented.recovery", defaultValue: "이후 버전에 제공할 예정입니다.")
         case .saveRejected:
             return String(
                 localized: "error.saveRejected.recovery",

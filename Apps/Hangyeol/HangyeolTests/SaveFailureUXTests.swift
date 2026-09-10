@@ -2,50 +2,60 @@ import XCTest
 @testable import Hangyeol
 
 final class SaveFailureUXTests: XCTestCase {
-    func testHangyeolDocumentEquatableTracksModelEdits() {
+    func testChromeBindsHasUnsavedEdits() {
         var document = HangyeolDocument()
-        let pristine = document
-        XCTAssertEqual(document, pristine)
+        XCTAssertFalse(document.hasUnsavedEdits)
 
-        document.model.metadata.title = "메모"
-        XCTAssertNotEqual(document, pristine)
-        XCTAssertEqual(document.model.displayTitle, "메모")
-    }
-
-    func testChromeShowsEditedSubtitleAndVoiceOverLabel() {
         let clean = DocumentChromeState.make(
-            title: "보고서",
+            title: document.model.displayTitle,
             isEditedOverride: nil,
-            windowEdited: false
+            hasUnsavedEdits: document.hasUnsavedEdits
         )
-        XCTAssertEqual(clean.title, "보고서")
         XCTAssertFalse(clean.isEdited)
         XCTAssertNil(clean.navigationSubtitle)
-        XCTAssertEqual(clean.accessibilityLabel, "보고서")
 
-        let dirtyFromWindow = DocumentChromeState.make(
+        document.hasUnsavedEdits = true
+        let dirty = DocumentChromeState.make(
             title: "보고서",
             isEditedOverride: nil,
-            windowEdited: true
+            hasUnsavedEdits: document.hasUnsavedEdits
         )
-        XCTAssertEqual(dirtyFromWindow.navigationSubtitle, L10n.edited)
-        XCTAssertTrue(dirtyFromWindow.accessibilityLabel.contains(L10n.edited))
+        XCTAssertEqual(dirty.navigationSubtitle, L10n.edited)
+        XCTAssertTrue(dirty.accessibilityLabel.contains(L10n.edited))
 
         let overrideWins = DocumentChromeState.make(
             title: "보고서",
             isEditedOverride: false,
-            windowEdited: true
+            hasUnsavedEdits: true
         )
         XCTAssertFalse(overrideWins.isEdited)
-        XCTAssertNil(overrideWins.navigationSubtitle)
 
-        let publishedDirty = DocumentChromeState.make(
+        let previewDirty = DocumentChromeState.make(
             title: "보고서",
             isEditedOverride: true,
-            windowEdited: false
+            hasUnsavedEdits: false
         )
-        XCTAssertTrue(publishedDirty.isEdited)
-        XCTAssertEqual(publishedDirty.navigationSubtitle, L10n.edited)
+        XCTAssertTrue(previewDirty.isEdited)
+    }
+
+    func testSessionSaveFailurePresentsLastSaveErrorUntilDismissed() {
+        let error = HangyeolError.saveFailed("디스크가 가득 찼습니다.")
+        XCTAssertEqual(
+            SessionSaveFailurePresentation.presentedError(lastSaveError: error, dismissedID: nil),
+            error
+        )
+        XCTAssertNil(
+            SessionSaveFailurePresentation.presentedError(lastSaveError: error, dismissedID: error.id)
+        )
+        XCTAssertNil(
+            SessionSaveFailurePresentation.presentedError(lastSaveError: nil, dismissedID: nil)
+        )
+
+        let next = HangyeolError.saveRejected
+        XCTAssertEqual(
+            SessionSaveFailurePresentation.presentedError(lastSaveError: next, dismissedID: error.id),
+            next
+        )
     }
 
     func testFailureSheetA11yJoinsCauseAndRecovery() {
@@ -69,6 +79,9 @@ final class SaveFailureUXTests: XCTestCase {
         let empty = HangyeolError.emptyFile
         XCTAssertTrue(empty.localizedDescription.contains("열 수 없습니다"))
         XCTAssertTrue((empty.recoverySuggestion ?? "").contains("HWP"))
+
+        XCTAssertFalse(HangyeolError.saveRejected.localizedDescription.contains("SAVE_REJECTED"))
+        XCTAssertTrue((HangyeolError.saveRejected.recoverySuggestion ?? "").contains("HWPX"))
     }
 
     @MainActor
