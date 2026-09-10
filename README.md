@@ -5,6 +5,7 @@ macOS 14+ 네이티브 앱. `.hwp` / `.hwpx` 열기 · 본문·표 수정 · HWP
 - Bundle ID: `app.hangyeol.mac`
 - 엔진: 공개 엔진 1개 (1주 PoC: openhwp, 백업: rhwp)
 - 앱 런타임에 Python 금지
+- Engine (Week1): [엔진 비교 초안 + 샘플 목록](docs/week1-engine-comparison.md)
 
 ## 모노레포 구조
 

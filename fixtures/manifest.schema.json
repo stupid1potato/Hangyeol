@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stupid1potato/Hangyeol/fixtures/manifest.schema.json",
+  "title": "Hangyeol fixture manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fixtures"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "fixtures": {
+      "type": "array",
+      "description": "Sample corpus entries. Empty until binaries are licensed and ingested.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "format", "license", "owner"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Fixture id such as F01 … F21",
+            "pattern": "^F[0-9]{2}$"
+          },
+          "path": {
+            "type": "string",
+            "description": "Repo-relative path, typically fixtures/{id}_{slug}.{hwp|hwpx|bin}"
+          },
+          "format": {
+            "type": "string",
+            "enum": ["hwp5", "hwpx", "corrupt", "encrypted"]
+          },
+          "expects": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "plainText": { "type": "string" },
+              "sectionCount": { "type": "integer", "minimum": 0 },
+              "encrypted": { "type": "boolean" },
+              "errorCode": { "type": "string" }
+            }
+          },
+          "license": {
+            "type": "string",
+            "description": "Redistribution license after legal review"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "description": "Public intake URL when applicable"
+          },
+          "owner": {
+            "type": "string",
+            "enum": ["dev1", "hangul_owner"]
+          }
+        }
+      }
+    }
+  }
+}
