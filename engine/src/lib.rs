@@ -14,6 +14,7 @@ use rhwp::error::HwpError;
 use rhwp::model::control::Control;
 use rhwp::model::document::Document;
 use rhwp::model::paragraph::Paragraph;
+use rhwp::model::table::{Cell, Table};
 use rhwp::parser::{detect_format, FileFormat};
 use std::ffi::{c_char, CStr};
 use std::panic::{self, AssertUnwindSafe};
@@ -21,6 +22,18 @@ use std::path::Path;
 use std::ptr;
 use std::slice;
 use std::sync::Mutex;
+
+/// C `hg_table_info`. Kit uses `index` as `hg_set_cell_text`'s `table`.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HgTableInfo {
+    pub index: u32,
+    pub section: u32,
+    pub paragraph: u32,
+    pub control: u32,
+    pub rows: u32,
+    pub cols: u32,
+}
 
 /// Opaque session pointer type for the C ABI (`typedef struct hg_engine hg_engine`).
 #[allow(non_camel_case_types)]
@@ -57,8 +70,9 @@ pub fn map_open_format(format: FileFormat) -> Result<(), HangyeolError> {
     }
 }
 
-fn map_open_hwp_error(err: HwpError) -> HangyeolError {
-    let msg = err.to_string();
+/// Classify an open-path error message (HwpError Display / ParseError text).
+/// Design-only ENCRYPTED mapping — no encrypted fixture is required.
+pub fn map_open_message(msg: &str) -> HangyeolError {
     if msg.contains("EncryptedDocument")
         || msg.contains("비밀번호")
         || msg.contains("암호 문서")
@@ -66,7 +80,9 @@ fn map_open_hwp_error(err: HwpError) -> HangyeolError {
     {
         return HangyeolError::Encrypted;
     }
-    if msg.contains("UNSUPPORTED_HWP3") || msg.contains("HWP 3.0") || msg.contains("UNSUPPORTED_HML")
+    if msg.contains("UNSUPPORTED_HWP3")
+        || msg.contains("HWP 3.0")
+        || msg.contains("UNSUPPORTED_HML")
     {
         return HangyeolError::UnsupportedVersion;
     }
@@ -75,6 +91,10 @@ fn map_open_hwp_error(err: HwpError) -> HangyeolError {
     }
     // Includes UNSUPPORTED_FILE_FORMAT (truncated ZIP / unknown magic) → CORRUPT.
     HangyeolError::Corrupt
+}
+
+fn map_open_hwp_error(err: HwpError) -> HangyeolError {
+    map_open_message(&err.to_string())
 }
 
 /// Verified Hangyeol clear-before-save recipe (hub-A gate):
@@ -125,6 +145,155 @@ fn append_para_text(para: &Paragraph, out: &mut String) {
                 }
             }
         }
+    }
+}
+
+/// Document-order tables (body, then nested cell tables). `index` is the
+/// `table` argument for `hg_set_cell_text`.
+pub fn list_tables(core: &DocumentCore) -> Vec<HgTableInfo> {
+    collect_tables(core.document())
+}
+
+fn collect_tables(document: &Document) -> Vec<HgTableInfo> {
+    let mut out = Vec::new();
+    for (sec_i, section) in document.sections.iter().enumerate() {
+        for (para_i, para) in section.paragraphs.iter().enumerate() {
+            collect_tables_in_para(para, sec_i, para_i, &mut out);
+        }
+    }
+    for (i, info) in out.iter_mut().enumerate() {
+        info.index = i as u32;
+    }
+    out
+}
+
+fn collect_tables_in_para(
+    para: &Paragraph,
+    section: usize,
+    paragraph: usize,
+    out: &mut Vec<HgTableInfo>,
+) {
+    for (ctrl_i, control) in para.controls.iter().enumerate() {
+        if let Control::Table(table) = control {
+            out.push(HgTableInfo {
+                index: out.len() as u32,
+                section: section as u32,
+                paragraph: paragraph as u32,
+                control: ctrl_i as u32,
+                rows: u32::from(table.row_count),
+                cols: u32::from(table.col_count),
+            });
+            for cell in &table.cells {
+                for cell_para in &cell.paragraphs {
+                    collect_tables_in_para(cell_para, section, paragraph, out);
+                }
+            }
+        }
+    }
+}
+
+fn cell_mut(table: &mut Table, row: u32, col: u32) -> Result<&mut Cell, HangyeolError> {
+    let rows = u32::from(table.row_count);
+    let cols = u32::from(table.col_count);
+    if row >= rows || col >= cols {
+        return Err(HangyeolError::Corrupt);
+    }
+    if !table.cell_grid.is_empty() {
+        let grid_i = (row as usize)
+            .checked_mul(cols as usize)
+            .and_then(|v| v.checked_add(col as usize))
+            .ok_or(HangyeolError::Corrupt)?;
+        if let Some(Some(idx)) = table.cell_grid.get(grid_i) {
+            return table.cells.get_mut(*idx).ok_or(HangyeolError::Corrupt);
+        }
+    }
+    table
+        .cells
+        .iter_mut()
+        .find(|c| u32::from(c.row) == row && u32::from(c.col) == col)
+        .ok_or(HangyeolError::Corrupt)
+}
+
+/// Replace a cell's plain text via DocumentCore IR (`delete_text_at` /
+/// `insert_text_at`). Not a ZIP/XML hand writer.
+fn replace_cell_plain_text(cell: &mut Cell, text: &str) -> Result<(), HangyeolError> {
+    let (first, rest) = cell
+        .paragraphs
+        .split_first_mut()
+        .ok_or(HangyeolError::Corrupt)?;
+    let old_len = first.text.chars().count();
+    if old_len > 0 {
+        first.delete_text_at(0, old_len);
+    }
+    if !text.is_empty() {
+        first.insert_text_at(0, text);
+    }
+    for extra in rest {
+        let n = extra.text.chars().count();
+        if n > 0 {
+            extra.delete_text_at(0, n);
+        }
+    }
+    Ok(())
+}
+
+fn visit_table_mut(
+    para: &mut Paragraph,
+    target: usize,
+    current: &mut usize,
+    f: &mut dyn FnMut(&mut Table) -> Result<(), HangyeolError>,
+) -> Result<bool, HangyeolError> {
+    for control in &mut para.controls {
+        if let Control::Table(table) = control {
+            if *current == target {
+                f(table)?;
+                return Ok(true);
+            }
+            *current += 1;
+            for cell in &mut table.cells {
+                for cell_para in &mut cell.paragraphs {
+                    if visit_table_mut(cell_para, target, current, f)? {
+                        return Ok(true);
+                    }
+                }
+            }
+        }
+    }
+    Ok(false)
+}
+
+pub fn set_cell_text(
+    core: &mut DocumentCore,
+    table_index: u32,
+    row: u32,
+    col: u32,
+    text: &str,
+) -> Result<(), HangyeolError> {
+    let document = core.document_mut();
+    let mut current = 0usize;
+    let mut applied = false;
+    {
+        let mut apply = |table: &mut Table| {
+            let cell = cell_mut(table, row, col)?;
+            replace_cell_plain_text(cell, text)?;
+            Ok(())
+        };
+        for section in &mut document.sections {
+            for para in &mut section.paragraphs {
+                if visit_table_mut(para, table_index as usize, &mut current, &mut apply)? {
+                    applied = true;
+                    break;
+                }
+            }
+            if applied {
+                break;
+            }
+        }
+    }
+    if applied {
+        Ok(())
+    } else {
+        Err(HangyeolError::Corrupt)
     }
 }
 
@@ -224,7 +393,11 @@ pub fn plain_text(core: &DocumentCore) -> String {
 }
 
 /// `replace_all_native` including table cells. Returns replacement count.
-pub fn replace_text(core: &mut DocumentCore, find: &str, replace: &str) -> Result<usize, HangyeolError> {
+pub fn replace_text(
+    core: &mut DocumentCore,
+    find: &str,
+    replace: &str,
+) -> Result<usize, HangyeolError> {
     if find.is_empty() {
         return Ok(0);
     }
@@ -392,7 +565,12 @@ pub unsafe extern "C" fn hg_insert_text(
         let text = c_str(text)?;
         engine
             .core
-            .insert_text_native(section as usize, paragraph as usize, char_offset as usize, text)
+            .insert_text_native(
+                section as usize,
+                paragraph as usize,
+                char_offset as usize,
+                text,
+            )
             .map_err(|_| HangyeolError::Corrupt)?;
         Ok(ok())
     })
@@ -417,6 +595,54 @@ pub unsafe extern "C" fn hg_delete_range(
                 count as usize,
             )
             .map_err(|_| HangyeolError::Corrupt)?;
+        Ok(ok())
+    })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn hg_list_tables(
+    engine: *mut hg_engine,
+    out_tables: *mut HgTableInfo,
+    capacity: usize,
+    out_count: *mut usize,
+) -> HgStatus {
+    ffi_status(|| {
+        if out_count.is_null() {
+            return Err(HangyeolError::Corrupt);
+        }
+        let engine = take_engine(engine)?;
+        let tables = collect_tables(engine.core.document());
+        unsafe {
+            *out_count = tables.len();
+        }
+        if capacity == 0 {
+            return Ok(ok());
+        }
+        if out_tables.is_null() {
+            return Err(HangyeolError::Corrupt);
+        }
+        let n = capacity.min(tables.len());
+        for (i, info) in tables.iter().take(n).enumerate() {
+            unsafe {
+                *out_tables.add(i) = *info;
+            }
+        }
+        Ok(ok())
+    })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn hg_set_cell_text(
+    engine: *mut hg_engine,
+    table: u32,
+    row: u32,
+    col: u32,
+    text: *const c_char,
+) -> HgStatus {
+    ffi_status(|| {
+        let engine = take_engine(engine)?;
+        let text = c_str(text)?;
+        set_cell_text(&mut engine.core, table, row, col, text)?;
         Ok(ok())
     })
 }
@@ -454,8 +680,14 @@ mod tests {
 
     #[test]
     fn unknown_format_is_corrupt_not_unsupported() {
-        assert_eq!(map_open_format(FileFormat::Unknown), Err(HangyeolError::Corrupt));
-        assert_eq!(map_open_format(FileFormat::Empty), Err(HangyeolError::Corrupt));
+        assert_eq!(
+            map_open_format(FileFormat::Unknown),
+            Err(HangyeolError::Corrupt)
+        );
+        assert_eq!(
+            map_open_format(FileFormat::Empty),
+            Err(HangyeolError::Corrupt)
+        );
         assert_eq!(
             map_open_format(FileFormat::Hwp3),
             Err(HangyeolError::UnsupportedVersion)
@@ -463,6 +695,21 @@ mod tests {
         assert_eq!(HangyeolError::Encrypted.status(), HgStatus::Password);
         assert_eq!(HangyeolError::SaveRejected.status(), HgStatus::Unsupported);
         assert_eq!(HangyeolError::Corrupt.status(), HgStatus::Corrupt);
+    }
+
+    /// Design-only: map password/encrypted open errors → ENCRYPTED / HG_PASSWORD.
+    /// Does not commit or read an encrypted fixture.
+    #[test]
+    fn encrypted_open_message_maps_to_password() {
+        let msg = "유효하지 않은 파일: 비밀번호가 필요한 암호 문서입니다 \
+                   (parse_document_with_password 또는 parse_hwp_with_password)";
+        assert_eq!(map_open_message(msg), HangyeolError::Encrypted);
+        assert_eq!(
+            map_open_message("EncryptedDocument"),
+            HangyeolError::Encrypted
+        );
+        assert_eq!(HangyeolError::Encrypted.status(), HgStatus::Password);
+        assert_eq!(HangyeolError::Encrypted.as_str(), "ENCRYPTED");
     }
 
     /// Exact verified recipe on DocumentCore (not ZIP/XML edit):
@@ -496,7 +743,11 @@ mod tests {
         }
 
         let exported = core.export_hwpx_native().expect("export_hwpx_native");
-        assert_eq!(count_linesegarray(&exported), 0, "hp:linesegarray must be 0");
+        assert_eq!(
+            count_linesegarray(&exported),
+            0,
+            "hp:linesegarray must be 0"
+        );
 
         let reopened = DocumentCore::from_bytes(&exported).expect("reopen");
         let text = collect_plain_text(reopened.document());
@@ -504,5 +755,34 @@ mod tests {
             text.contains("HGPOC99"),
             "replacement token must survive export, got {text:?}"
         );
+    }
+
+    #[test]
+    fn list_tables_and_set_cell_text_on_hub_a() {
+        let bytes = hub_a();
+        let mut core = DocumentCore::from_bytes(&bytes).expect("open hub-A");
+        let tables = list_tables(&core);
+        assert_eq!(tables.len(), 1, "SimpleTable has one body table");
+        assert_eq!(tables[0].index, 0);
+        assert_eq!(tables[0].rows, 3);
+        assert_eq!(tables[0].cols, 3);
+
+        set_cell_text(&mut core, 0, 0, 0, "HGSET99").expect("set (0,0)");
+        // Merged 2×2: grid (0,1) is the same anchor as (0,0).
+        let text = collect_plain_text(core.document());
+        assert!(
+            text.contains("HGSET99"),
+            "cell text must update in IR, got {text:?}"
+        );
+        assert!(
+            !text.split('\n').any(|line| line.trim() == "1"),
+            "anchor cell '1' should be replaced, got {text:?}"
+        );
+
+        let exported = export_hwpx_cleared(&mut core).expect("clear-before-save");
+        assert_eq!(count_linesegarray(&exported), 0);
+        let reopened = DocumentCore::from_bytes(&exported).expect("reopen");
+        let again = collect_plain_text(reopened.document());
+        assert!(again.contains("HGSET99"), "got {again:?}");
     }
 }

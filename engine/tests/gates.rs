@@ -1,8 +1,9 @@
 //! Hangyeol DocumentCore FFI gates: hub-A replace+clear, F14, F16.
 
 use hangyeol_engine::{
-    hg_close, hg_engine, hg_free_buffer, hg_last_error, hg_open, hg_plain_text, hg_replace_text,
-    hg_save, hg_save_hwpx, HangyeolError, HgStatus,
+    hg_close, hg_delete_range, hg_engine, hg_free_buffer, hg_insert_text, hg_last_error,
+    hg_list_tables, hg_open, hg_plain_text, hg_replace_text, hg_save, hg_save_hwpx,
+    hg_set_cell_text, HangyeolError, HgStatus, HgTableInfo,
 };
 use std::ffi::{CStr, CString};
 use std::io::Read;
@@ -189,5 +190,169 @@ fn fixture_paths_exist() {
     ] {
         let p = fixtures_dir().join(name);
         assert!(p.is_file(), "missing {p:?}");
+    }
+}
+
+fn open_hub_a() -> (*mut hg_engine, Vec<u8>) {
+    let bytes = read_fixture("hub_hwpxlib_SimpleTable.hwpx");
+    let mut engine: *mut hg_engine = ptr::null_mut();
+    let status = unsafe { hg_open(bytes.as_ptr(), bytes.len(), 0, &mut engine) };
+    assert_eq!(status, HgStatus::Ok, "{:?}", last_error_str());
+    assert!(!engine.is_null());
+    (engine, bytes)
+}
+
+fn plain_text(engine: *mut hg_engine) -> String {
+    let mut text_ptr = ptr::null_mut();
+    let mut text_len = 0usize;
+    let status = unsafe { hg_plain_text(engine, &mut text_ptr, &mut text_len) };
+    assert_eq!(status, HgStatus::Ok, "{:?}", last_error_str());
+    let text = utf8_from_buf(text_ptr, text_len);
+    unsafe { hg_free_buffer(text_ptr) };
+    text
+}
+
+fn save_cleared(engine: *mut hg_engine) -> Vec<u8> {
+    let mut saved_ptr = ptr::null_mut();
+    let mut saved_len = 0usize;
+    let status = unsafe { hg_save(engine, 0, &mut saved_ptr, &mut saved_len) };
+    assert_eq!(status, HgStatus::Ok, "hg_save {:?}", last_error_str());
+    let saved = unsafe { std::slice::from_raw_parts(saved_ptr, saved_len).to_vec() };
+    unsafe { hg_free_buffer(saved_ptr) };
+    assert_eq!(
+        count_linesegarray(&saved),
+        0,
+        "clear-before-save must emit 0 hp:linesegarray"
+    );
+    saved
+}
+
+#[test]
+fn hub_a_list_tables_set_cell_clear_before_save_roundtrip() {
+    unsafe {
+        let (engine, _) = open_hub_a();
+
+        let mut count = 0usize;
+        let status = hg_list_tables(engine, ptr::null_mut(), 0, &mut count);
+        assert_eq!(status, HgStatus::Ok, "{:?}", last_error_str());
+        assert_eq!(count, 1, "SimpleTable / hub-A has one table");
+
+        let mut infos = [HgTableInfo {
+            index: 0,
+            section: 0,
+            paragraph: 0,
+            control: 0,
+            rows: 0,
+            cols: 0,
+        }; 4];
+        let status = hg_list_tables(engine, infos.as_mut_ptr(), infos.len(), &mut count);
+        assert_eq!(status, HgStatus::Ok, "{:?}", last_error_str());
+        assert_eq!(count, 1);
+        assert_eq!(infos[0].index, 0);
+        assert_eq!(infos[0].rows, 3);
+        assert_eq!(infos[0].cols, 3);
+
+        let token = CString::new("HGSET99").unwrap();
+        let status = hg_set_cell_text(engine, infos[0].index, 0, 0, token.as_ptr());
+        assert_eq!(status, HgStatus::Ok, "set_cell {:?}", last_error_str());
+
+        let before_save = plain_text(engine);
+        assert!(
+            before_save.contains("HGSET99"),
+            "cell text before save, got {before_save:?}"
+        );
+
+        let saved = save_cleared(engine);
+
+        let out_dir = testdata_out();
+        std::fs::create_dir_all(&out_dir).unwrap();
+        let artifact = out_dir.join("SimpleTable-set-cell.hwpx");
+        let path = CString::new(artifact.to_str().unwrap()).unwrap();
+        let status = hg_save_hwpx(engine, path.as_ptr());
+        assert_eq!(status, HgStatus::Ok, "hg_save_hwpx {:?}", last_error_str());
+        hg_close(engine);
+
+        let disk = std::fs::read(&artifact).unwrap();
+        assert_eq!(count_linesegarray(&disk), 0);
+
+        let mut engine2: *mut hg_engine = ptr::null_mut();
+        let status = hg_open(saved.as_ptr(), saved.len(), 0, &mut engine2);
+        assert_eq!(status, HgStatus::Ok, "reopen {:?}", last_error_str());
+        let text = plain_text(engine2);
+
+        let mut count2 = 0usize;
+        let mut infos2 = [HgTableInfo {
+            index: 0,
+            section: 0,
+            paragraph: 0,
+            control: 0,
+            rows: 0,
+            cols: 0,
+        }; 1];
+        assert_eq!(
+            hg_list_tables(engine2, infos2.as_mut_ptr(), 1, &mut count2),
+            HgStatus::Ok
+        );
+        assert_eq!(count2, 1);
+        assert_eq!(infos2[0].rows, 3);
+        assert_eq!(infos2[0].cols, 3);
+        hg_close(engine2);
+
+        assert!(
+            text.contains("HGSET99"),
+            "reopened plain text must contain set-cell token, got {text:?}"
+        );
+        assert!(
+            text.contains('2') && text.contains('5'),
+            "other SimpleTable cells must survive, got {text:?}"
+        );
+    }
+}
+
+#[test]
+fn set_cell_text_out_of_range_is_corrupt() {
+    unsafe {
+        let (engine, _) = open_hub_a();
+        let token = CString::new("x").unwrap();
+        let status = hg_set_cell_text(engine, 99, 0, 0, token.as_ptr());
+        assert_eq!(status, HgStatus::Corrupt);
+        assert_eq!(last_error_str(), Some("CORRUPT"));
+        let status = hg_set_cell_text(engine, 0, 9, 0, token.as_ptr());
+        assert_eq!(status, HgStatus::Corrupt);
+        hg_close(engine);
+    }
+}
+
+/// Regression: existing freeze helpers still call DocumentCore and do not panic.
+#[test]
+fn insert_text_delete_range_roundtrip() {
+    unsafe {
+        let (engine, _) = open_hub_a();
+        let before = plain_text(engine);
+        let token = CString::new("HGINS").unwrap();
+        let status = hg_insert_text(engine, 0, 0, 0, token.as_ptr());
+        assert_eq!(status, HgStatus::Ok, "insert {:?}", last_error_str());
+        let mid = plain_text(engine);
+        assert!(
+            mid.contains("HGINS"),
+            "inserted token must appear in plain text, got {mid:?}"
+        );
+
+        let status = hg_delete_range(engine, 0, 0, 0, 5);
+        assert_eq!(status, HgStatus::Ok, "delete {:?}", last_error_str());
+        let after = plain_text(engine);
+        assert_eq!(after, before, "delete should restore pre-insert plain text");
+
+        let saved = save_cleared(engine);
+        hg_close(engine);
+
+        let mut engine2: *mut hg_engine = ptr::null_mut();
+        assert_eq!(
+            hg_open(saved.as_ptr(), saved.len(), 0, &mut engine2),
+            HgStatus::Ok
+        );
+        let reopened = plain_text(engine2);
+        hg_close(engine2);
+        assert_eq!(reopened, before);
     }
 }
