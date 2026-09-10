@@ -18,15 +18,24 @@ struct HangyeolDocument: FileDocument {
     }
 
     init(configuration: ReadConfiguration) throws {
-        let type = Self.fileType(from: configuration.contentType)
         guard let data = configuration.file.regularFileContents else {
             throw HangyeolError.emptyFile
         }
+        try self.init(
+            opening: data,
+            type: Self.fileType(from: configuration.contentType),
+            filename: configuration.file.filename
+        )
+    }
+
+    /// Same FileDocument open path, from bytes. Tests use this because
+    /// `FileDocumentReadConfiguration` has no accessible initializer on current SDK.
+    init(opening data: Data, type: DocumentFileType, filename: String? = nil) throws {
         let session = DocumentSession()
         do {
             var model = try session.open(data: data, type: type)
             if model.metadata.title.isEmpty {
-                model.metadata.title = configuration.file.filename.map {
+                model.metadata.title = filename.map {
                     URL(fileURLWithPath: $0).deletingPathExtension().lastPathComponent
                 } ?? L10n.untitled
             }

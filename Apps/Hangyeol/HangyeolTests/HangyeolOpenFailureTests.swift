@@ -132,14 +132,11 @@ final class HangyeolOpenFailureTests: XCTestCase {
     func testHangyeolDocumentOpenCorruptThrowsCorrupt() throws {
         EngineClient.resetToMock()
         let data = try RepoFixtures.data("16_corrupt_truncated.hwpx")
-        let wrapper = FileWrapper(regularFileWithContents: data)
-        wrapper.filename = "16_corrupt_truncated.hwpx"
         XCTAssertThrowsError(
             try HangyeolDocument(
-                configuration: HangyeolDocument.ReadConfiguration(
-                    contentType: .hangyeolHwpx,
-                    file: wrapper
-                )
+                opening: data,
+                type: .hwpx,
+                filename: "16_corrupt_truncated.hwpx"
             )
         ) { error in
             XCTAssertEqual(HangyeolError.mapOpenFailure(error), .corrupt)
@@ -149,14 +146,11 @@ final class HangyeolOpenFailureTests: XCTestCase {
     func testHangyeolDocumentOpenEncryptedThrowsEncrypted() throws {
         EngineClient.resetToMock()
         let data = try RepoFixtures.data("22_encrypted_synthetic.bin")
-        let wrapper = FileWrapper(regularFileWithContents: data)
-        wrapper.filename = "22_encrypted_synthetic.hwpx"
         XCTAssertThrowsError(
             try HangyeolDocument(
-                configuration: HangyeolDocument.ReadConfiguration(
-                    contentType: .hangyeolHwpx,
-                    file: wrapper
-                )
+                opening: data,
+                type: .hwpx,
+                filename: "22_encrypted_synthetic.hwpx"
             )
         ) { error in
             XCTAssertEqual(HangyeolError.mapOpenFailure(error), .encrypted)

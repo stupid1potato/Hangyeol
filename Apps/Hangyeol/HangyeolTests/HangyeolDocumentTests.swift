@@ -87,13 +87,10 @@ final class HangyeolDocumentTests: XCTestCase {
         let payload = try JSONEncoder().encode(snapshot)
         EngineClient.current = KitRealEngine()
 
-        let wrapper = FileWrapper(regularFileWithContents: payload)
-        wrapper.filename = "singleton-clobber.hwpx"
         let document = try HangyeolDocument(
-            configuration: HangyeolDocument.ReadConfiguration(
-                contentType: .hangyeolHwpx,
-                file: wrapper
-            )
+            opening: payload,
+            type: .hwpx,
+            filename: "singleton-clobber.hwpx"
         )
         XCTAssertTrue(document.session.isUsingMock)
         XCTAssertFalse(document.model.isEmpty)
