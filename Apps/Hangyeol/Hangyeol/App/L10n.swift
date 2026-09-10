@@ -83,4 +83,54 @@ enum L10n {
         defaultValue: "한결은 macOS에서 HWP/HWPX 문서를 엽니다. 파일 → 열기… 를 누르거나 파일을 창이나 Dock 아이콘에 놓아 문서를 여세요."
     )
     static let printStub = String(localized: "print.stub", defaultValue: "인쇄는 아직 지원하지 않습니다.")
+
+    static let tableEditLiveNote = String(
+        localized: "table.edit.live",
+        defaultValue: "표 칸은 이 문서의 열린 세션에 반영됩니다. 허브-A: (0,0)에 HGSET99 입력 후 HWPX 저장."
+    )
+    static let tableCellEditFailureTitle = String(
+        localized: "sheet.tableCell.title",
+        defaultValue: "표 칸을 고치지 못했습니다"
+    )
+    static let tableCellEditRetryHint = String(
+        localized: "sheet.tableCell.retryHint",
+        defaultValue: "같은 칸에 다시 입력합니다."
+    )
+    static let tableEmptyCell = String(localized: "table.cell.empty", defaultValue: "빈 칸")
+    static let tableHeaderRole = String(localized: "table.cell.headerRole", defaultValue: "머리글")
+
+    static func tableA11y(rows: Int, columns: Int) -> String {
+        String(
+            format: String(localized: "table.a11y", defaultValue: "표, %d행 %d열"),
+            locale: Locale(identifier: "ko_KR"),
+            rows,
+            columns
+        )
+    }
+
+    static func tableCellA11y(row: Int, column: Int, text: String, isHeader: Bool) -> String {
+        let body = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? tableEmptyCell
+            : text
+        if isHeader {
+            return String(
+                format: String(
+                    localized: "table.cell.header.a11y",
+                    defaultValue: "%d행 %d열, %@, %@"
+                ),
+                locale: Locale(identifier: "ko_KR"),
+                row,
+                column,
+                tableHeaderRole,
+                body
+            )
+        }
+        return String(
+            format: String(localized: "table.cell.a11y", defaultValue: "%d행 %d열, %@"),
+            locale: Locale(identifier: "ko_KR"),
+            row,
+            column,
+            body
+        )
+    }
 }
