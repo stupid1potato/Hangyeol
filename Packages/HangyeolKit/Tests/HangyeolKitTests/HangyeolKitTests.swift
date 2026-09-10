@@ -101,6 +101,12 @@ final class RealEngineTests: XCTestCase {
         XCTAssertThrowsError(try engine.deleteRange(section: 0, paragraph: 0, charOffset: 0, count: 1)) { error in
             XCTAssertEqual(error as? HangyeolKitError, .notLinked)
         }
+        XCTAssertThrowsError(try engine.listTables()) { error in
+            XCTAssertEqual(error as? HangyeolKitError, .notLinked)
+        }
+        XCTAssertThrowsError(try engine.setCellText(table: 0, row: 0, col: 0, text: "x")) { error in
+            XCTAssertEqual(error as? HangyeolKitError, .notLinked)
+        }
         XCTAssertNil(engine.lastError())
         engine.close()
     }
@@ -109,6 +115,12 @@ final class RealEngineTests: XCTestCase {
         try XCTSkipIf(RealEngine.isLinked, "XCFramework linked — HangyeolEngineFFI is not the live session")
         let ffi = HangyeolEngineFFI()
         XCTAssertThrowsError(try ffi.open(data: Data(), type: .hwp)) { error in
+            XCTAssertEqual(error as? HangyeolKitError, .notLinked)
+        }
+        XCTAssertThrowsError(try ffi.listTables()) { error in
+            XCTAssertEqual(error as? HangyeolKitError, .notLinked)
+        }
+        XCTAssertThrowsError(try ffi.setCellText(table: 0, row: 0, col: 0, text: "x")) { error in
             XCTAssertEqual(error as? HangyeolKitError, .notLinked)
         }
     }

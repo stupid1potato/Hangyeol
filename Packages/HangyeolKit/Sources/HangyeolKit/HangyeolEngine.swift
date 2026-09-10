@@ -20,9 +20,38 @@ public struct DocumentModel: Sendable, Equatable {
     }
 }
 
+/// One table in document order (`hg_table_info`).
+/// Pass `index` as `table` to `RealEngine.setCellText`. `rows` / `cols` size the grid.
+/// Table UI (TableBlock views) is frontend-owned; this is ABI addressing only.
+public struct TableInfo: Sendable, Equatable {
+    public var index: UInt32
+    public var section: UInt32
+    public var paragraph: UInt32
+    public var control: UInt32
+    public var rows: UInt32
+    public var cols: UInt32
+
+    public init(
+        index: UInt32,
+        section: UInt32,
+        paragraph: UInt32,
+        control: UInt32,
+        rows: UInt32,
+        cols: UInt32
+    ) {
+        self.index = index
+        self.section = section
+        self.paragraph = paragraph
+        self.control = control
+        self.rows = rows
+        self.cols = cols
+    }
+}
+
 /// Same boundary as the app `HangyeolEngine` protocol (`open` / `save`).
 /// Freeze edit ABI (`hg_plain_text` / `hg_replace_text` / `hg_save_hwpx` /
-/// `hg_insert_text` / `hg_delete_range` / `hg_last_error`) lives on `RealEngine`.
+/// `hg_insert_text` / `hg_delete_range` / `hg_list_tables` / `hg_set_cell_text` /
+/// `hg_last_error`) lives on `RealEngine`.
 /// The app wraps this type in `KitRealEngine`; `MockEngine` remains for rollback.
 public protocol HangyeolEngine: Sendable {
     func open(data: Data, type: DocumentFileType) throws -> DocumentModel

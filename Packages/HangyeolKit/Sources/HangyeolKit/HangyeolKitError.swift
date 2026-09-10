@@ -109,6 +109,19 @@ enum HangyeolEngineSupport {
     }
 }
 
+extension TableInfo {
+    init(_ info: hg_table_info) {
+        self.init(
+            index: info.index,
+            section: info.section,
+            paragraph: info.paragraph,
+            control: info.control,
+            rows: info.rows,
+            cols: info.cols
+        )
+    }
+}
+
 extension DocumentFileType {
     var hgFileType: hg_file_type {
         switch self {
