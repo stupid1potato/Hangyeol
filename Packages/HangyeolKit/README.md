@@ -2,9 +2,9 @@
 
 Swift FFI wrapper around the rhwp DocumentCore thin C ABI (`hg_*`).
 
-**This package is not linked from `Apps/Hangyeol`.** The app keeps `MockEngine`. Do not add this product to the Xcode project yet.
+**`Apps/Hangyeol` links this product** (local SPM). The app does **not** use Kit types as its document model. It wraps `RealEngine` in `KitRealEngine` (app `DocumentModel` paragraphs from `plainText()`; save is the live `hg_engine*` session). `MockEngine` remains for rollback (`EngineClient.resetToMock()`, `HANGYEOL_USE_MOCK=1`).
 
-Week-3 order: **header sync → XCFramework vendor path → RealEngine (this package) → app link.** See [week-3 FFI checklist](../../docs/week3-ffi-checklist.md).
+Week-3 order: **header sync → XCFramework vendor path → RealEngine (this package) → app link (done).** See [week-3 FFI checklist](../../docs/week3-ffi-checklist.md).
 
 ## Engine (팀장3 확정)
 
@@ -74,7 +74,9 @@ Error mapping (`hg_status` + `hg_last_error`):
 
 When the real library is linked, `RealEngine` does **not** throw `notLinked`.
 
-Mac XCFramework 재현은 [로컬 재현 (PR #14)](../../docs/engine/xcframework.md#로컬-재현-2026-09-10). Kit live `hg_*` 검증은 이후 단계. Linux cannot run the Apple XCFramework. This package does **not** link `Apps/Hangyeol` or swap `MockEngine`.
+Mac XCFramework 재현은 [로컬 재현 (PR #14)](../../docs/engine/xcframework.md#로컬-재현-2026-09-10). Linux cannot run the Apple XCFramework.
+
+`Apps/Hangyeol` links this product and uses `KitRealEngine` when `RealEngine.isLinked`; otherwise Mock. Do not commit `.xcframework` / `.a` / `.dylib`.
 
 ## Status kinds (exactly four)
 
@@ -89,6 +91,6 @@ Defined as `hg_status` / `HangyeolStatus`:
 
 ## What this package is not
 
-- Not linked from `Apps/Hangyeol` (no import, no xcodeproj product, no `EngineClient` swap)
 - Not a committed XCFramework / `.a` / `.dylib`
-- Not an app-side `MockEngine` replacement (that PR comes after kit RealEngine)
+- Not the app `DocumentModel` (blocks/tables). Kit `DocumentModel` is a file-type placeholder; the app adapter maps `plainText()`
+- Not a replacement that deletes `MockEngine` — the app keeps Mock for rollback

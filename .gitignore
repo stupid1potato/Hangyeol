@@ -19,6 +19,7 @@ Packages/HangyeolKit/Vendor/**
 **/*.xcframework/**
 *.a
 *.dylib
+SourcePackages/
 
 # Rust
 engine/target/

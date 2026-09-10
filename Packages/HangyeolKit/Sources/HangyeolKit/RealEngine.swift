@@ -14,7 +14,8 @@ import Foundation
 /// (`line_segs` cleared; `hp:linesegarray` count 0). HWP write is
 /// `SAVE_REJECTED` / `HG_UNSUPPORTED`.
 ///
-/// Apps/Hangyeol must not import this type yet (MockEngine stays live).
+/// Apps/Hangyeol uses this type only through `KitRealEngine` (app DocumentModel
+/// is a different type). MockEngine stays available for rollback.
 public final class RealEngine: HangyeolEngine, @unchecked Sendable {
     private let lock = NSLock()
     private var session: OpaquePointer?

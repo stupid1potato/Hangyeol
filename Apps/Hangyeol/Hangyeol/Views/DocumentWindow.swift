@@ -23,8 +23,9 @@ struct DocumentWindow: View {
                 FindReplaceBar(
                     query: $findQuery,
                     replacement: $replaceQuery,
+                    liveEngine: EngineClient.liveSession != nil,
                     onFind: {},
-                    onReplace: {},
+                    onReplace: replaceInEngine,
                     onClose: { showFindReplace = false }
                 )
                 Divider()
@@ -128,6 +129,24 @@ struct DocumentWindow: View {
             if let url {
                 recents.noteOpened(url)
             }
+        }
+    }
+
+    private func replaceInEngine() {
+        guard EngineClient.liveSession != nil else { return }
+        let find = findQuery
+        let replacement = replaceQuery
+        guard !find.isEmpty else { return }
+        do {
+            _ = try EngineClient.replaceText(find: find, replace: replacement)
+            document.model = try EngineClient.refreshDisplayModel(
+                type: document.model.metadata.sourceType,
+                title: document.model.metadata.title
+            )
+        } catch let error as HangyeolError {
+            presentedError = error
+        } catch {
+            presentedError = .engineFailed(error.localizedDescription)
         }
     }
 

@@ -1,0 +1,54 @@
+import XCTest
+@testable import Hangyeol
+
+final class KitRealEngineTests: XCTestCase {
+    func testPlainTextMapsToParagraphsInOrder() {
+        let model = KitRealEngine.documentModel(
+            fromPlainText: "본문\n셀1\n셀2",
+            type: .hwpx,
+            title: "허브-A"
+        )
+        XCTAssertEqual(model.metadata.title, "허브-A")
+        XCTAssertEqual(model.metadata.sourceType, .hwpx)
+        let texts = model.blocks.compactMap { block -> String? in
+            if case .paragraph(let paragraph) = block { return paragraph.plainText }
+            return nil
+        }
+        XCTAssertEqual(texts, ["본문", "셀1", "셀2"])
+        XCTAssertTrue(model.blocks.allSatisfy {
+            if case .paragraph = $0 { return true }
+            return false
+        })
+    }
+
+    func testBlankAndWhitespaceLinesAreDropped() {
+        let model = KitRealEngine.documentModel(
+            fromPlainText: "\n  가  \n\n나\n",
+            type: .hwp
+        )
+        XCTAssertEqual(model.metadata.sourceType, .hwp)
+        let texts = model.blocks.compactMap { block -> String? in
+            if case .paragraph(let paragraph) = block { return paragraph.plainText }
+            return nil
+        }
+        XCTAssertEqual(texts, ["가", "나"])
+    }
+
+    func testEmptyPlainTextKeepsOneParagraphSoDocumentIsOpen() {
+        let model = KitRealEngine.documentModel(fromPlainText: "   \n\n", type: .hwpx)
+        XCTAssertEqual(model.blocks.count, 1)
+        XCTAssertFalse(model.isEmpty)
+        if case .paragraph(let paragraph) = model.blocks[0] {
+            XCTAssertEqual(paragraph.plainText, "")
+        } else {
+            XCTFail("expected a paragraph")
+        }
+    }
+
+    func testGenericErrorMapsToEngineFailed() {
+        struct Dummy: Error, LocalizedError {
+            var errorDescription: String? { "dummy-kit" }
+        }
+        XCTAssertEqual(KitRealEngine.mapError(Dummy()), .engineFailed("dummy-kit"))
+    }
+}
