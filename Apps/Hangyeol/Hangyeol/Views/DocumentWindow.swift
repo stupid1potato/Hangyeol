@@ -15,6 +15,8 @@ struct DocumentWindow: View {
     @State private var showFindReplace = false
     @State private var findQuery = ""
     @State private var replaceQuery = ""
+    @State private var lastReplacementCount: Int?
+    @State private var replaceStatusFocusToken = 0
     @State private var presentedError: HangyeolError?
     @State private var showHelp = false
     @State private var isDropTargeted = false
@@ -35,15 +37,24 @@ struct DocumentWindow: View {
         )
     }
 
+    private var findReplacePresentation: FindReplacePresentation {
+        FindReplacePresentation.make(
+            canReplace: document.session.canReplace,
+            query: findQuery,
+            lastReplacementCount: lastReplacementCount,
+            statusFocusToken: replaceStatusFocusToken
+        )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if showFindReplace {
                 FindReplaceBar(
                     query: $findQuery,
                     replacement: $replaceQuery,
-                    liveEngine: EngineClient.liveSession != nil,
+                    presentation: findReplacePresentation,
                     onFind: {},
-                    onReplace: replaceInEngine,
+                    onReplace: replaceInDocument,
                     onClose: { showFindReplace = false }
                 )
                 Divider()
@@ -178,6 +189,9 @@ struct DocumentWindow: View {
                 recents.noteOpened(url)
             }
         }
+        .onChange(of: findQuery) { _, _ in
+            lastReplacementCount = nil
+        }
         .onReceive(document.session.$lastSaveError) { error in
             if error == nil {
                 dismissedSaveErrorID = nil
@@ -200,21 +214,25 @@ struct DocumentWindow: View {
         NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
     }
 
-    private func replaceInEngine() {
-        guard EngineClient.liveSession != nil else { return }
-        let find = findQuery
-        let replacement = replaceQuery
-        guard !find.isEmpty else { return }
-        do {
-            _ = try EngineClient.replaceText(find: find, replace: replacement)
-            document.model = try EngineClient.refreshDisplayModel(
-                type: document.model.metadata.sourceType,
-                title: document.model.metadata.title
-            )
-        } catch let error as HangyeolError {
+    private func replaceInDocument() {
+        switch FindReplaceFlow.replace(
+            canReplace: document.session.canReplace,
+            find: findQuery,
+            replace: replaceQuery,
+            perform: { find, replacement in
+                var updated = document
+                let count = try updated.replaceText(find: find, replace: replacement)
+                document = updated
+                return count
+            }
+        ) {
+        case .skippedUnavailable, .skippedEmptyQuery:
+            return
+        case .replaced(let count):
+            lastReplacementCount = count
+            replaceStatusFocusToken += 1
+        case .failed(let error):
             presentedError = error
-        } catch {
-            presentedError = .engineFailed(error.localizedDescription)
         }
     }
 

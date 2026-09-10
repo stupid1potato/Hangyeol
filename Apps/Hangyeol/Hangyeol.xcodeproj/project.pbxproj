@@ -28,6 +28,8 @@
 		00000000000000000000001F /* SaveFailureSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000020 /* SaveFailureSheet.swift */; };
 		0000000000000000000000A1 /* RetryableFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000A0 /* RetryableFailure.swift */; };
 		0000000000000000000000A3 /* DocumentChromeState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000A2 /* DocumentChromeState.swift */; };
+		0000000000000000000000B1 /* FindReplacePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B0 /* FindReplacePresentation.swift */; };
+		0000000000000000000000B3 /* FindReplaceUXTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B2 /* FindReplaceUXTests.swift */; };
 		000000000000000000000021 /* PDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000022 /* PDFExporter.swift */; };
 		000000000000000000000023 /* PrintCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000024 /* PrintCoordinator.swift */; };
 		000000000000000000000025 /* SecurityScopedBookmarks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000026 /* SecurityScopedBookmarks.swift */; };
@@ -81,6 +83,8 @@
 		000000000000000000000020 /* SaveFailureSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveFailureSheet.swift; sourceTree = "<group>"; };
 		0000000000000000000000A0 /* RetryableFailure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetryableFailure.swift; sourceTree = "<group>"; };
 		0000000000000000000000A2 /* DocumentChromeState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentChromeState.swift; sourceTree = "<group>"; };
+		0000000000000000000000B0 /* FindReplacePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindReplacePresentation.swift; sourceTree = "<group>"; };
+		0000000000000000000000B2 /* FindReplaceUXTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindReplaceUXTests.swift; sourceTree = "<group>"; };
 		000000000000000000000022 /* PDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFExporter.swift; sourceTree = "<group>"; };
 		000000000000000000000024 /* PrintCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrintCoordinator.swift; sourceTree = "<group>"; };
 		000000000000000000000026 /* SecurityScopedBookmarks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityScopedBookmarks.swift; sourceTree = "<group>"; };
@@ -184,6 +188,7 @@
 			children = (
 				000000000000000000000014 /* DocumentWindow.swift */,
 				0000000000000000000000A2 /* DocumentChromeState.swift */,
+				0000000000000000000000B0 /* FindReplacePresentation.swift */,
 				000000000000000000000016 /* StructuredTextView.swift */,
 				000000000000000000000018 /* TableBlockView.swift */,
 				00000000000000000000001A /* EmptyStateView.swift */,
@@ -246,6 +251,7 @@
 				000000000000000000000084 /* KitRealEngineTests.swift */,
 				000000000000000000000088 /* DocumentSessionTests.swift */,
 				0000000000000000000000A6 /* SaveFailureUXTests.swift */,
+				0000000000000000000000B2 /* FindReplaceUXTests.swift */,
 			);
 			path = HangyeolTests;
 			sourceTree = "<group>";
@@ -378,6 +384,7 @@
 				00000000000000000000001F /* SaveFailureSheet.swift in Sources */,
 				0000000000000000000000A1 /* RetryableFailure.swift in Sources */,
 				0000000000000000000000A3 /* DocumentChromeState.swift in Sources */,
+				0000000000000000000000B1 /* FindReplacePresentation.swift in Sources */,
 				000000000000000000000021 /* PDFExporter.swift in Sources */,
 				000000000000000000000023 /* PrintCoordinator.swift in Sources */,
 				000000000000000000000025 /* SecurityScopedBookmarks.swift in Sources */,
@@ -399,6 +406,7 @@
 				000000000000000000000085 /* KitRealEngineTests.swift in Sources */,
 				000000000000000000000089 /* DocumentSessionTests.swift in Sources */,
 				0000000000000000000000A7 /* SaveFailureUXTests.swift in Sources */,
+				0000000000000000000000B3 /* FindReplaceUXTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

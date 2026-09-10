@@ -21,8 +21,8 @@ enum L10n {
     static let find = String(localized: "action.find", defaultValue: "찾기…")
     static let findPlaceholder = String(localized: "find.query", defaultValue: "찾기")
     static let replacePlaceholder = String(localized: "find.replace", defaultValue: "바꾸기")
-    static let findNext = String(localized: "find.next", defaultValue: "다음")
-    static let replace = String(localized: "find.replaceAction", defaultValue: "바꾸기")
+    static let findNext = String(localized: "find.next", defaultValue: "다음 찾기")
+    static let replace = String(localized: "find.replaceAction", defaultValue: "모두 바꾸기")
     static let close = String(localized: "action.close", defaultValue: "닫기")
     static let ok = String(localized: "action.ok", defaultValue: "확인")
     static let retry = String(localized: "action.retry", defaultValue: "다시 시도")
@@ -58,11 +58,26 @@ enum L10n {
         localized: "sheet.reopenFailure.retryHint",
         defaultValue: "최근 문서를 다시 엽니다."
     )
-    static let findStubNote = String(localized: "find.stub", defaultValue: "찾기/바꾸기는 Mock에서는 동작하지 않습니다.")
+    static let findStubNote = String(
+        localized: "find.stub",
+        defaultValue: "이 문서에서는 찾기/바꾸기를 쓸 수 없습니다."
+    )
     static let findLiveNote = String(
         localized: "find.live",
-        defaultValue: "바꾸기는 열린 엔진 세션(표 셀 포함)에 적용됩니다. 허브-A 스모크: 1 → HGPOC99 후 HWPX 저장."
+        defaultValue: "바꾸기는 이 문서의 열린 세션(표 셀 포함)에 적용됩니다. 허브-A 스모크: 1 → HGPOC99 후 HWPX 저장."
     )
+
+    static func replacedCount(_ count: Int) -> String {
+        if count == 0 {
+            return String(localized: "find.replacedNone", defaultValue: "바꿀 곳이 없습니다.")
+        }
+        return String(
+            format: String(localized: "find.replacedCount", defaultValue: "%d곳을 바꿨습니다."),
+            locale: Locale(identifier: "ko_KR"),
+            count
+        )
+    }
+
     static let helpBody = String(
         localized: "help.body",
         defaultValue: "한결은 macOS에서 HWP/HWPX 문서를 엽니다. 파일 → 열기… 를 누르거나 파일을 창이나 Dock 아이콘에 놓아 문서를 여세요."

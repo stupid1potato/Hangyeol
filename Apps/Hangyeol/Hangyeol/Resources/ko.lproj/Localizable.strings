@@ -17,8 +17,8 @@
 "action.find" = "찾기…";
 "find.query" = "찾기";
 "find.replace" = "바꾸기";
-"find.next" = "다음";
-"find.replaceAction" = "바꾸기";
+"find.next" = "다음 찾기";
+"find.replaceAction" = "모두 바꾸기";
 "action.close" = "닫기";
 "action.ok" = "확인";
 "action.retry" = "다시 시도";
@@ -42,8 +42,10 @@
 "empty.recentsNone" = "최근에 연 문서가 없습니다. 문서를 열면 여기에 나타납니다.";
 "empty.recentsOpenHint" = "이 최근 문서를 엽니다.";
 "empty.week1" = "파일을 열거나 이 창에 놓으면 문서가 열립니다.";
-"find.stub" = "찾기/바꾸기는 Mock에서는 동작하지 않습니다.";
-"find.live" = "바꾸기는 열린 엔진 세션(표 셀 포함)에 적용됩니다. 허브-A 스모크: 1 → HGPOC99 후 HWPX 저장.";
+"find.stub" = "이 문서에서는 찾기/바꾸기를 쓸 수 없습니다.";
+"find.live" = "바꾸기는 이 문서의 열린 세션(표 셀 포함)에 적용됩니다. 허브-A 스모크: 1 → HGPOC99 후 HWPX 저장.";
+"find.replacedNone" = "바꿀 곳이 없습니다.";
+"find.replacedCount" = "%d곳을 바꿨습니다.";
 "help.body" = "한결은 macOS에서 HWP/HWPX 문서를 엽니다. 파일 → 열기… 를 누르거나 파일을 창이나 Dock 아이콘에 놓아 문서를 여세요.";
 "error.engine.notLinked" = "HangyeolEngine XCFramework가 연결되지 않았습니다.";
 "error.engine.unimplemented" = "엔진 기능";
