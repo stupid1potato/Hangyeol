@@ -2,7 +2,11 @@
 
 /*
  * Stub implementation: always fail. No real parser, no decrypt, no write.
- * Linked only inside this package; Apps/Hangyeol must not depend on HangyeolKit.
+ *
+ * Symbols match engine/include/hangyeol_engine.h (source of truth). This .c
+ * is NOT the Rust cdylib — it only keeps the SPM clang target compiling.
+ * Do not link engine/ from this package. Apps/Hangyeol must not depend on
+ * HangyeolKit; MockEngine stays live until an XCFramework exists.
  */
 
 hg_status hg_open(
@@ -43,4 +47,77 @@ void hg_free_buffer(uint8_t *bytes) {
 
 void hg_close(hg_engine *engine) {
     (void)engine;
+}
+
+hg_status hg_plain_text(
+    hg_engine *engine,
+    uint8_t **out_bytes,
+    size_t *out_length
+) {
+    (void)engine;
+    if (out_bytes) {
+        *out_bytes = NULL;
+    }
+    if (out_length) {
+        *out_length = 0;
+    }
+    return HG_UNSUPPORTED;
+}
+
+hg_status hg_replace_text(
+    hg_engine *engine,
+    const char *find,
+    const char *replace,
+    size_t *out_count
+) {
+    (void)engine;
+    (void)find;
+    (void)replace;
+    if (out_count) {
+        *out_count = 0;
+    }
+    return HG_UNSUPPORTED;
+}
+
+hg_status hg_save_hwpx(
+    hg_engine *engine,
+    const char *path
+) {
+    (void)engine;
+    (void)path;
+    return HG_UNSUPPORTED;
+}
+
+hg_status hg_insert_text(
+    hg_engine *engine,
+    uint32_t section,
+    uint32_t paragraph,
+    uint32_t char_offset,
+    const char *text
+) {
+    (void)engine;
+    (void)section;
+    (void)paragraph;
+    (void)char_offset;
+    (void)text;
+    return HG_UNSUPPORTED;
+}
+
+hg_status hg_delete_range(
+    hg_engine *engine,
+    uint32_t section,
+    uint32_t paragraph,
+    uint32_t char_offset,
+    uint32_t count
+) {
+    (void)engine;
+    (void)section;
+    (void)paragraph;
+    (void)char_offset;
+    (void)count;
+    return HG_UNSUPPORTED;
+}
+
+const char *hg_last_error(void) {
+    return NULL;
 }

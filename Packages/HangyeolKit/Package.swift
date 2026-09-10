@@ -13,9 +13,10 @@ let package = Package(
         ),
     ],
     targets: [
-        // C ABI draft. Header-only would not compile as an SPM clang target,
-        // so a stub .c that only returns error statuses is included.
-        // Do not link this product from Apps/Hangyeol (MockEngine stays live).
+        // C ABI synced from engine/include/hangyeol_engine.h (source of truth).
+        // Stub .c returns HG_UNSUPPORTED / NULL so the clang target compiles.
+        // Do not SPM-link engine/ and do not link this product from Apps/Hangyeol
+        // (MockEngine stays live; RealEngine waits for XCFramework).
         .target(
             name: "CHangyeolEngine",
             path: "Sources/CHangyeolEngine",
