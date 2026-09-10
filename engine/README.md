@@ -30,8 +30,10 @@ edit symbols (`hg_plain_text` / `hg_replace_text` / `hg_save_hwpx` /
 `hg_table_info.index` + `rows`/`cols` onto TableBlock cell addressing.
 
 `hg_list_images` walks `Control::Picture` (body, then nested cell pictures) and
-returns index + size/format meta (`hg_image_info`). Hub-B gate. Not a BinData
-extract or keep-on-save API ([image-meta.md](../docs/engine/image-meta.md)).
+returns index + size/format meta (`hg_image_info`). Hub-B list gate. Not a
+BinData extract API. Keep-on-save of ZIP `BinData/` on the existing
+`hg_save_hwpx` clear-before-save path is a hub-B **product gate**
+([image-meta.md](../docs/engine/image-meta.md)).
 
 | Freeze code | Kit `hg_status` |
 |-------------|-----------------|
@@ -69,7 +71,7 @@ cargo test --manifest-path engine/Cargo.toml
 | Repo generate path (gitignored) | `engine/testdata/out/SimpleTable-cleared-replaced.hwpx` |
 | Insert product gate (gitignored) | `engine/testdata/out/SimpleTable-inserted.hwpx` |
 | Delete product gate (gitignored) | `engine/testdata/out/SimpleTable-deleted.hwpx` |
-| Hub-B image measurement (gitignored) | `engine/testdata/out/SimplePicture-cleared.hwpx` |
+| Hub-B keep-on-save product gate (gitignored) | `engine/testdata/out/SimplePicture-keep-on-save.hwpx` |
 
 Regenerate without the full suite:
 
@@ -77,6 +79,7 @@ Regenerate without the full suite:
 cargo test --manifest-path engine/Cargo.toml hub_a_replace_clear_before_save_roundtrip -- --exact
 cargo test --manifest-path engine/Cargo.toml hub_a_insert_text_clear_before_save_roundtrip -- --exact
 cargo test --manifest-path engine/Cargo.toml hub_a_delete_range_clear_before_save_roundtrip -- --exact
+cargo test --manifest-path engine/Cargo.toml hub_b_image_keep_on_save_clear_before_save_roundtrip -- --exact
 ```
 
 The derived HWPX is Apache-2.0 (hub-A / hwpxlib). It is **not** committed. Hangul open smoke is Mac-manual on the Downloads copy (or copy the generated file onto the Mac).
@@ -97,7 +100,7 @@ engine/
   src/lib.rs          # FFI + DocumentCore wrapper
   src/error.rs        # freeze ↔ Kit mapping
   include/hangyeol_engine.h
-  tests/gates.rs      # hub-A replace/insert/delete/table+clear, hub-B image list, F14, F16
+  tests/gates.rs      # hub-A replace/insert/delete/table+clear, hub-B image list + keep-on-save, F14, F16
   testdata/out/       # gitignored generated HWPX
   scripts/copy-staticlib-to-release.sh  # deps → release .a (macOS XCFramework)
 ```
