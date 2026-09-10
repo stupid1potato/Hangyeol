@@ -53,7 +53,7 @@ rustup target add aarch64-apple-darwin
 | 종류 | 명령 | 경로 |
 |------|------|------|
 | **cdylib** | `cargo build --release --target aarch64-apple-darwin` | `engine/target/aarch64-apple-darwin/release/libhangyeol_engine.dylib` |
-| **staticlib** | `cargo rustc … -- --crate-type staticlib` (Cargo.toml 수정 없이 `.a` 추가) | `engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a` |
+| **staticlib** | `cargo rustc … -- --crate-type staticlib` (Cargo.toml 수정 없이 `.a` 추가) | `engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a` — 없을 때 `…/release/deps/libhangyeol_engine.a`를 copy/symlink |
 | **헤더 (정본 ABI)** | 손작성. cbindgen 불필요 | `engine/include/hangyeol_engine.h` |
 | **XCFramework** | `xcodebuild -create-xcframework` | `engine/target/xcframework/HangyeolEngine.xcframework` (`engine/target/` 아래라 커밋되지 않음) |
 
@@ -81,9 +81,10 @@ file engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a
 lipo -info engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a
 # 기대: arm64 only
 
+# top-level .a 가 없으면 아래 로컬 재현의 deps → release copy/symlink 후:
 nm -gU engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a | grep ' _hg_'
-# 기대 (일부): hg_open hg_save hg_save_hwpx hg_plain_text hg_replace_text
-#              hg_insert_text hg_delete_range hg_free_buffer hg_close hg_last_error
+# 기대: hg_open hg_save hg_save_hwpx hg_plain_text hg_replace_text
+#       hg_insert_text hg_delete_range hg_close hg_free_buffer hg_last_error
 ```
 
 `.dylib`를 XCFramework에 넣을 경우 id를 `@rpath`로 맞춘다:
@@ -95,11 +96,39 @@ install_name_tool -id @rpath/libhangyeol_engine.dylib \
 
 앱에 임베드할 때는 **staticlib XCFramework가 더 단순**하다 (`@rpath` / embed-and-sign 없음).
 
+## 로컬 재현 (2026-09-10)
+
+Apple Silicon Mac의 리포 체크아웃에서 확인 (rustc **1.93.1**, `MACOSX_DEPLOYMENT_TARGET=14.0`):
+
+```bash
+export MACOSX_DEPLOYMENT_TARGET=14.0
+cargo rustc --release --target aarch64-apple-darwin --manifest-path engine/Cargo.toml -- --crate-type=staticlib
+```
+
+**주의:** `.a`가 `engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a`에 없고 `engine/target/aarch64-apple-darwin/release/deps/libhangyeol_engine.a`에만 있을 수 있다. `xcodebuild -create-xcframework` 전에 top-level 경로가 없으면 copy 또는 symlink 한다:
+
+```bash
+# top-level .a 가 없을 때만 (deps → release)
+cp engine/target/aarch64-apple-darwin/release/deps/libhangyeol_engine.a \
+  engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a
+# 또는: ln -sf deps/libhangyeol_engine.a engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a
+```
+
+XCFramework 산출 (커밋하지 않음): `engine/target/xcframework/HangyeolEngine.xcframework`
+
+```bash
+nm -gU engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a | grep ' _hg_'
+# 확인됨: hg_open hg_save hg_save_hwpx hg_plain_text hg_replace_text
+#         hg_insert_text hg_delete_range hg_close hg_free_buffer hg_last_error
+```
+
 ## XCFramework 생성
 
 `xcodebuild -create-xcframework`는 **Mac + Xcode**가 필요하다.
 
 ### staticlib (권장, macOS arm64 단독)
+
+top-level `release/libhangyeol_engine.a`가 없으면 위에서처럼 `release/deps/`에서 copy/symlink 한 뒤:
 
 ```bash
 mkdir -p engine/target/xcframework
