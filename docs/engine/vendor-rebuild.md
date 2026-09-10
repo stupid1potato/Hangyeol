@@ -21,13 +21,13 @@ ln -sf /path/to/HangyeolEngine.xcframework \
   Packages/HangyeolKit/Vendor/HangyeolEngine.xcframework
 ```
 
-5. `nm` 확인 — insert / delete / table 포함:
+5. `nm` 확인 — insert / delete / table / image-list 포함:
 
 ```bash
 nm -gU engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a | grep ' _hg_'
 # 기대: hg_open hg_save hg_save_hwpx hg_plain_text hg_replace_text
 #       hg_insert_text hg_delete_range hg_list_tables hg_set_cell_text
-#       hg_close hg_free_buffer hg_last_error
+#       hg_list_images hg_close hg_free_buffer hg_last_error
 ```
 
 Linux에서는 Apple 바이너리를 만들지 않는다. 엔진 게이트는 `cargo test --manifest-path engine/Cargo.toml`.

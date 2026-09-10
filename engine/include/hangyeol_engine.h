@@ -14,7 +14,7 @@
  *      hg_plain_text / hg_replace_text / hg_save_hwpx
  *      plus product hg_insert_text / hg_delete_range
  *      plus table: hg_list_tables / hg_set_cell_text
- *      (future, not implemented: image-meta list — see docs/engine/image-meta.md)
+ *      plus image-meta list: hg_list_images (see docs/engine/image-meta.md)
  *
  * Kit mapping (tables):
  *   hg_list_tables     → TableBlock addressing. `hg_table_info.index` is the
@@ -24,6 +24,13 @@
  *   hg_set_cell_text   → cell plain-text write at (table, row, col). Merged
  *                        cells are addressed at any covered grid coordinate
  *                        (anchor via DocumentCore `cell_grid`).
+ *
+ * Kit mapping (images):
+ *   hg_list_images     → ImageBlock addressing. `hg_image_info.index` is the
+ *                        document-order picture id. `section`/`paragraph`/
+ *                        `control` locate the DocumentCore `Control::Picture`.
+ *                        `width`/`height` + `format` / `bin_data_id` / `href`
+ *                        are size/format meta (no BinData extract API).
  *
  * Freeze string codes ↔ Kit hg_status (1:1):
  *   ENCRYPTED            ↔ HG_PASSWORD
@@ -88,6 +95,27 @@ typedef struct hg_table_info {
     uint32_t rows;
     uint32_t cols;
 } hg_table_info;
+
+/**
+ * One picture in document order (body, then nested cell pictures).
+ *
+ * Kit: map to an ImageBlock. `index` addresses the picture. `width`/`height`
+ * are `img_dim` when set, else common object size (HWPUNIT). `format` is a
+ * NUL-terminated extension (`jpg` / `png` / …). `href` is Picture.href or a
+ * BinData path / `image{N}` id. Not an extract or keep-on-save API.
+ */
+typedef struct hg_image_info {
+    uint32_t index;         /* 0-based document order */
+    uint32_t section;       /* DocumentCore section index */
+    uint32_t paragraph;     /* body paragraph that owns the (outer) picture */
+    uint32_t control;       /* control index in that paragraph (or cell para) */
+    uint32_t width;         /* img_dim.0, else common.width */
+    uint32_t height;        /* img_dim.1, else common.height */
+    uint32_t byte_len;      /* BinData IR length; 0 if unknown */
+    uint32_t bin_data_id;   /* ImageAttr.bin_data_id */
+    char format[16];        /* NUL-terminated; empty if unknown */
+    char href[128];         /* NUL-terminated; empty if unknown */
+} hg_image_info;
 
 /* -------------------------------------------------------------------------- */
 /* HangyeolKit layer (signatures match Packages/HangyeolKit header)           */
@@ -206,6 +234,23 @@ hg_status hg_delete_range(
 hg_status hg_list_tables(
     hg_engine *engine,
     hg_table_info *out_tables,
+    size_t capacity,
+    size_t *out_count
+);
+
+/**
+ * List pictures (DocumentCore IR walk — no ZIP/XML parser, no BinData extract).
+ *
+ * Writes min(capacity, image count) entries into `out_images`.
+ * On HG_OK, *out_count is the total picture count (may exceed capacity).
+ * Pass capacity 0 / out_images NULL to query the count only.
+ *
+ * Kit: use `index` + `section`/`paragraph`/`control` + size/format meta
+ * (`width`/`height`/`format`/`bin_data_id`/`href`) to address images.
+ */
+hg_status hg_list_images(
+    hg_engine *engine,
+    hg_image_info *out_images,
     size_t capacity,
     size_t *out_count
 );

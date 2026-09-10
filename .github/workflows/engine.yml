@@ -2,15 +2,7 @@ name: engine
 
 on:
   push:
-    paths:
-      - "engine/**"
-      - "fixtures/**"
-      - ".github/workflows/engine.yml"
   pull_request:
-    paths:
-      - "engine/**"
-      - "fixtures/**"
-      - ".github/workflows/engine.yml"
 
 jobs:
   test:
@@ -22,5 +14,14 @@ jobs:
           # Hangyeol product pin is rustc ≥ 1.88. This rhwp SHA pulls aes 0.9.3
           # (rust-version 1.89). 1.93.1 matches rhwp's rust-toolchain.toml.
           toolchain: "1.93.1"
+      - name: Product gates must not be ignored
+        run: |
+          if grep -nE '#\[ignore\]' engine/tests/gates.rs; then
+            echo "engine/tests/gates.rs must not use #[ignore] — replace/insert/delete/table/image + linesegarray=0 gates always run"
+            exit 1
+          fi
       - name: Test hangyeol_engine
-        run: cargo test --manifest-path engine/Cargo.toml
+        run: |
+          # Always run lib + integration gates. --include-ignored so a stray
+          # #[ignore] cannot skip replace/insert/delete/table/image/linesegarray=0.
+          cargo test --manifest-path engine/Cargo.toml -- --include-ignored

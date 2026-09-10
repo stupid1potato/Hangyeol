@@ -10,6 +10,7 @@ macOS 14+ 네이티브 앱. `.hwp` / `.hwpx` 열기 · 본문·표 수정 · HWP
 - Engine (Week1): [rhwp 코어 서브셋 게이트 표](docs/rhwp-core-subset-gate.md)
 - Engine: [Apple Silicon XCFramework / staticlib](docs/engine/xcframework.md) · [Vendor rebuild (symbols)](docs/engine/vendor-rebuild.md)
 - Engine (Week3): [FFI 체크리스트 (앱 링크 · Mock→Real)](docs/week3-ffi-checklist.md)
+- Engine: [image-meta list](docs/engine/image-meta.md) · [known limitations (week-6 draft)](docs/known-limitations.md)
 
 ## 모노레포 구조
 

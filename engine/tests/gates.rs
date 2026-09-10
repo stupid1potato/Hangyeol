@@ -1,9 +1,10 @@
-//! Hangyeol DocumentCore FFI gates: hub-A replace/insert/delete+clear, F14, F16.
+//! Hangyeol DocumentCore FFI gates: hub-A replace/insert/delete/table+clear,
+//! hub-B image list, F14, F16.
 
 use hangyeol_engine::{
     hg_close, hg_delete_range, hg_engine, hg_free_buffer, hg_insert_text, hg_last_error,
-    hg_list_tables, hg_open, hg_plain_text, hg_replace_text, hg_save, hg_save_hwpx,
-    hg_set_cell_text, HangyeolError, HgStatus, HgTableInfo,
+    hg_list_images, hg_list_tables, hg_open, hg_plain_text, hg_replace_text, hg_save, hg_save_hwpx,
+    hg_set_cell_text, HangyeolError, HgImageInfo, HgStatus, HgTableInfo,
 };
 use std::ffi::{CStr, CString};
 use std::io::Read;
@@ -185,6 +186,7 @@ fn hwp_save_is_rejected() {
 fn fixture_paths_exist() {
     for name in [
         "hub_hwpxlib_SimpleTable.hwpx",
+        "hub_hwpxlib_SimplePicture.hwpx",
         "14_wrong_ext_hwpx.pdf",
         "16_corrupt_truncated.hwpx",
     ] {
@@ -442,5 +444,145 @@ fn insert_delete_out_of_range_is_corrupt() {
         assert_eq!(status, HgStatus::Corrupt);
         assert_eq!(last_error_str(), Some("CORRUPT"));
         hg_close(engine);
+    }
+}
+
+fn zip_bindata_entries(hwpx: &[u8]) -> Vec<(String, Vec<u8>)> {
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(hwpx)).expect("zip");
+    let mut out = Vec::new();
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).expect("entry");
+        let name = file.name().to_string();
+        if !name.starts_with("BinData/") {
+            continue;
+        }
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes).expect("bindata");
+        out.push((name, bytes));
+    }
+    out.sort_by(|a, b| a.0.cmp(&b.0));
+    out
+}
+
+fn list_images(engine: *mut hg_engine) -> Vec<HgImageInfo> {
+    let mut count = 0usize;
+    let status = unsafe { hg_list_images(engine, ptr::null_mut(), 0, &mut count) };
+    assert_eq!(status, HgStatus::Ok, "list count {:?}", last_error_str());
+    if count == 0 {
+        return Vec::new();
+    }
+    let mut infos = vec![HgImageInfo::zeroed(); count];
+    let status = unsafe { hg_list_images(engine, infos.as_mut_ptr(), infos.len(), &mut count) };
+    assert_eq!(status, HgStatus::Ok, "list fill {:?}", last_error_str());
+    infos.truncate(count);
+    infos
+}
+
+fn open_hub_b() -> (*mut hg_engine, Vec<u8>) {
+    let bytes = read_fixture("hub_hwpxlib_SimplePicture.hwpx");
+    let mut engine: *mut hg_engine = ptr::null_mut();
+    let status = unsafe { hg_open(bytes.as_ptr(), bytes.len(), 0, &mut engine) };
+    assert_eq!(status, HgStatus::Ok, "{:?}", last_error_str());
+    assert!(!engine.is_null());
+    (engine, bytes)
+}
+
+/// Product gate: hub-B list returns ≥1 image with size/format meta Kit can use.
+#[test]
+fn hub_b_list_images_has_meta() {
+    unsafe {
+        let (engine, _) = open_hub_b();
+        let mut count = 0usize;
+        let status = hg_list_images(engine, ptr::null_mut(), 0, &mut count);
+        assert_eq!(status, HgStatus::Ok, "{:?}", last_error_str());
+        assert!(
+            count >= 1,
+            "hub-B SimplePicture must list ≥1 image, got {count}"
+        );
+
+        let mut infos = vec![HgImageInfo::zeroed(); count.max(1)];
+        let status = hg_list_images(engine, infos.as_mut_ptr(), infos.len(), &mut count);
+        assert_eq!(status, HgStatus::Ok, "{:?}", last_error_str());
+        assert!(count >= 1);
+        let img = &infos[0];
+        assert_eq!(img.index, 0);
+        assert!(
+            img.width > 0 && img.height > 0,
+            "size meta width={} height={}",
+            img.width,
+            img.height
+        );
+        let fmt = img.format_str();
+        assert!(
+            matches!(fmt, "jpg" | "jpeg" | "png" | "gif" | "bmp"),
+            "format meta {fmt:?}"
+        );
+        assert!(
+            img.bin_data_id > 0 || !img.href_str().is_empty(),
+            "Kit addressing needs bin_data_id or href"
+        );
+        hg_close(engine);
+    }
+}
+
+/// Measurement (not a keep-on-save product gate): hub-B open → plain_text
+/// (no-op edit) → `hg_save_hwpx` clear-before-save → reopen. Reports whether
+/// ZIP `BinData/` binary + count survive. Week-6 approval required to productize.
+#[test]
+fn hub_b_image_clear_before_save_roundtrip_measurement() {
+    unsafe {
+        let (engine, original) = open_hub_b();
+        let before = list_images(engine);
+        assert!(
+            !before.is_empty(),
+            "measurement needs ≥1 listed image on open"
+        );
+        let original_bins = zip_bindata_entries(&original);
+        assert!(
+            !original_bins.is_empty(),
+            "hub-B fixture must contain BinData/"
+        );
+
+        // Optional no-op: exercise plain_text only. No image-keep experiment.
+        let _ = plain_text(engine);
+
+        let saved = save_cleared(engine);
+        let artifact = save_hwpx_cleared(engine, "SimplePicture-cleared.hwpx");
+        hg_close(engine);
+
+        let disk = std::fs::read(&artifact).unwrap();
+        assert_eq!(count_linesegarray(&disk), 0);
+
+        let saved_bins = zip_bindata_entries(&saved);
+        let count_preserved = saved_bins.len() == original_bins.len() && !saved_bins.is_empty();
+        let binary_preserved = count_preserved
+            && saved_bins
+                .iter()
+                .zip(original_bins.iter())
+                .all(|(a, b)| a.0 == b.0 && a.1 == b.1);
+
+        let mut engine2: *mut hg_engine = ptr::null_mut();
+        let status = hg_open(saved.as_ptr(), saved.len(), 0, &mut engine2);
+        assert_eq!(status, HgStatus::Ok, "reopen {:?}", last_error_str());
+        let after = list_images(engine2);
+        hg_close(engine2);
+
+        let list_count_preserved = after.len() == before.len();
+        eprintln!(
+            "hub-B image round-trip measurement (clear-before-save, no keep-on-save experiment):\n\
+             - original BinData entries: {}\n\
+             - saved BinData entries: {}\n\
+             - ZIP binary/count preserved: {}\n\
+             - hg_list_images count before/after: {}/{}\n\
+             - list count preserved: {}",
+            original_bins.len(),
+            saved_bins.len(),
+            if binary_preserved { "YES" } else { "NO" },
+            before.len(),
+            after.len(),
+            if list_count_preserved { "YES" } else { "NO" }
+        );
+        // Intentionally no assert on binary preserve — week-6 product decision.
+        let _ = (binary_preserved, list_count_preserved);
     }
 }
