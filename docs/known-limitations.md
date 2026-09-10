@@ -12,7 +12,7 @@
 - **표·셀·문단**: 엔진이 받치는 서브셋만 편집한다 (`listTables` / `setCellText` / `insertText` / `deleteRange`). 이미지·메타는 앱에서 렌더하지 않으며, 엔진 목록 API는 [engine/image-meta.md](engine/image-meta.md)를 본다.
 - **Mock vs Real**: XCFramework가 있으면 `KitRealEngine`(Real)이 기본. 롤백: `EngineClient.resetToMock()`, 실행 환경 `HANGYEOL_USE_MOCK=1` (`true` / `YES`), UserDefaults `HANGYEOL_USE_MOCK`. 절차: [week3-ffi-checklist.md](week3-ffi-checklist.md).
 - **PDF/인쇄**: 문단+표 셀 `plainText`(구조화 텍스트)다. 한/글 조판 인쇄가 아니다.
-- **공증 / Sparkle / Quick Look**: MVP 밖. 공증 준비는 week-7만.
+- **공증 / Sparkle / Quick Look**: MVP 밖. week-6: 공증 준비 체크리스트 초안만 ([app/notarization-prep.md](app/notarization-prep.md), 확정 대기). Apple Developer 팀/계정 요청과 실제 공증은 week-7.
 
 ## Engine
 
