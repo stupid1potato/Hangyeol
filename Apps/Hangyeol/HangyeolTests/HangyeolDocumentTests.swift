@@ -125,6 +125,18 @@ final class HangyeolDocumentTests: XCTestCase {
         XCTAssertFalse(document.hasUnsavedEdits)
     }
 
+    func testImageApisOnUntitledMockDocumentThrowNotYetImplemented() {
+        EngineClient.resetToMock()
+        let document = HangyeolDocument()
+        XCTAssertFalse(document.session.canListImages)
+        XCTAssertThrowsError(try document.listImages()) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertFalse(document.hasUnsavedEdits)
+    }
+
     func testParagraphApisOnUntitledMockDocumentThrowNotYetImplemented() {
         EngineClient.resetToMock()
         var document = HangyeolDocument()

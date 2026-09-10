@@ -87,6 +87,9 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
     /// Real session with an open `hg_engine*` (table cell list/edit).
     var canEditCells: Bool { canEdit }
 
+    /// Real session with an open `hg_engine*` (read-only `listImages`).
+    var canListImages: Bool { canEdit }
+
     /// Real session with an open `hg_engine*` (paragraph `insertText` / `deleteRange`).
     var canEditParagraphs: Bool { canEdit }
 
@@ -171,6 +174,10 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
 
     func listTables() throws -> [TableInfo] {
         try requireOpenLiveSessionForCells().listTables()
+    }
+
+    func listImages() throws -> [ImageInfo] {
+        try requireOpenLiveSessionForImages().listImages()
     }
 
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
@@ -358,6 +365,16 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
             throw HangyeolError.notYetImplemented(String(
                 localized: "error.engine.cellMock",
                 defaultValue: "표 셀 편집 (Mock)"
+            ))
+        }
+        return session
+    }
+
+    private func requireOpenLiveSessionForImages() throws -> any HangyeolLiveSession {
+        guard canListImages, let session = liveSession, session.isOpen else {
+            throw HangyeolError.notYetImplemented(String(
+                localized: "error.engine.imageMock",
+                defaultValue: "이미지 목록 (Mock)"
             ))
         }
         return session

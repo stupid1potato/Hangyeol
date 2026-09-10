@@ -25,6 +25,7 @@ private final class FakeLiveEngine: HangyeolLiveSession, @unchecked Sendable {
     var isOpen: Bool = true
     var replaceCount = 0
     var listedTables: [TableInfo] = []
+    var listedImages: [ImageInfo] = []
     var setCellCalls: [(UInt32, UInt32, UInt32, String)] = []
     var insertCalls: [(UInt32, UInt32, UInt32, String)] = []
     var deleteCalls: [(UInt32, UInt32, UInt32, UInt32)] = []
@@ -60,6 +61,10 @@ private final class FakeLiveEngine: HangyeolLiveSession, @unchecked Sendable {
 
     func listTables() throws -> [TableInfo] {
         listedTables
+    }
+
+    func listImages() throws -> [ImageInfo] {
+        listedImages
     }
 
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
@@ -218,6 +223,48 @@ final class DocumentSessionTests: XCTestCase {
         XCTAssertEqual(document.model.metadata.title, "제목")
     }
 
+    func testListImagesOnBoundSessionDoesNotMarkDirty() throws {
+        let live = FakeLiveEngine()
+        live.listedImages = [
+            ImageInfo(
+                index: 0,
+                section: 0,
+                paragraph: 2,
+                control: 0,
+                width: 120,
+                height: 80,
+                byteLen: 2048,
+                binDataId: 1,
+                format: "png",
+                href: "BinData/image1.png"
+            )
+        ]
+        let document = HangyeolDocument(
+            model: DocumentModel(
+                metadata: DocumentMetadata(title: "제목", sourceType: .hwpx),
+                blocks: [.paragraph(ParagraphBlock(text: "원본"))]
+            ),
+            session: DocumentSession(engine: live)
+        )
+        XCTAssertFalse(document.hasUnsavedEdits)
+        XCTAssertTrue(document.session.canListImages)
+
+        let images = try document.listImages()
+        XCTAssertEqual(images.count, 1)
+        XCTAssertEqual(images[0].index, 0)
+        XCTAssertEqual(images[0].section, 0)
+        XCTAssertEqual(images[0].paragraph, 2)
+        XCTAssertEqual(images[0].control, 0)
+        XCTAssertEqual(images[0].width, 120)
+        XCTAssertEqual(images[0].height, 80)
+        XCTAssertEqual(images[0].byteLen, 2048)
+        XCTAssertEqual(images[0].binDataId, 1)
+        XCTAssertEqual(images[0].format, "png")
+        XCTAssertEqual(images[0].href, "BinData/image1.png")
+        XCTAssertFalse(document.hasUnsavedEdits)
+        XCTAssertEqual(document.model.plainText, "원본")
+    }
+
     func testInsertTextMarksDocumentDirtyOnBoundSession() throws {
         let live = FakeLiveEngine()
         var document = HangyeolDocument(
@@ -294,6 +341,24 @@ final class DocumentSessionTests: XCTestCase {
         XCTAssertFalse(document.hasUnsavedEdits)
     }
 
+    func testImageApisOnMockThrowNotYetImplemented() {
+        let session = DocumentSession(engine: MockEngine())
+        XCTAssertFalse(session.canListImages)
+        XCTAssertThrowsError(try session.listImages()) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+
+        let document = HangyeolDocument(model: MockEngine.sampleDocument(), session: session)
+        XCTAssertThrowsError(try document.listImages()) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertFalse(document.hasUnsavedEdits)
+    }
+
     func testParagraphApisOnMockThrowNotYetImplemented() {
         let session = DocumentSession(engine: MockEngine())
         XCTAssertFalse(session.canEdit)
@@ -358,6 +423,32 @@ final class DocumentSessionTests: XCTestCase {
             }
         }
         XCTAssertTrue(live.setCellCalls.isEmpty)
+    }
+
+    func testImageApisOnClosedLiveSessionThrow() {
+        let live = FakeLiveEngine()
+        live.isOpen = false
+        live.listedImages = [
+            ImageInfo(
+                index: 0,
+                section: 0,
+                paragraph: 0,
+                control: 0,
+                width: 1,
+                height: 1,
+                byteLen: 1,
+                binDataId: 1,
+                format: "png",
+                href: "image1.png"
+            )
+        ]
+        let session = DocumentSession(engine: live)
+        XCTAssertFalse(session.canListImages)
+        XCTAssertThrowsError(try session.listImages()) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
     }
 
     func testOpenLiveSaveDoesNotReencodeAsTaggedJSON() throws {

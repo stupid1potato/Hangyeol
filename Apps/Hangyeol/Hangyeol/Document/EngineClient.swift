@@ -14,6 +14,7 @@ protocol HangyeolLiveSession: HangyeolEngine {
     func displayModel(type: DocumentFileType, title: String) throws -> DocumentModel
     func saveHwpx(to path: String) throws
     func listTables() throws -> [TableInfo]
+    func listImages() throws -> [ImageInfo]
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws
     func insertText(section: UInt32, paragraph: UInt32, charOffset: UInt32, text: String) throws
     func deleteRange(section: UInt32, paragraph: UInt32, charOffset: UInt32, count: UInt32) throws
@@ -154,6 +155,18 @@ enum EngineClient {
             ))
         }
         return try session.listTables()
+    }
+
+    /// Smoke / list images against `current` only (tests / process probe).
+    /// Documents must call `HangyeolDocument.listImages` / `DocumentSession.listImages`.
+    static func listImages() throws -> [ImageInfo] {
+        guard let session = liveSession else {
+            throw HangyeolError.notYetImplemented(String(
+                localized: "error.engine.imageMock",
+                defaultValue: "이미지 목록 (Mock)"
+            ))
+        }
+        return try session.listImages()
     }
 
     /// Smoke / set cell text against `current` only (tests / process probe).
