@@ -62,6 +62,24 @@ final class HangyeolDocumentTests: XCTestCase {
         XCTAssertFalse(document.hasUnsavedEdits)
     }
 
+    func testParagraphApisOnUntitledMockDocumentThrowNotYetImplemented() {
+        EngineClient.resetToMock()
+        var document = HangyeolDocument()
+        XCTAssertFalse(document.session.canEdit)
+        XCTAssertFalse(document.session.canEditParagraphs)
+        XCTAssertThrowsError(try document.insertText(section: 0, paragraph: 0, charOffset: 0, text: "x")) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertThrowsError(try document.deleteRange(section: 0, paragraph: 0, charOffset: 0, count: 1)) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertFalse(document.hasUnsavedEdits)
+    }
+
     func testOpenConfigurationDoesNotUseProcessSingleton() throws {
         EngineClient.resetToMock()
         var snapshot = MockEngine.sampleDocument()

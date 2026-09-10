@@ -26,6 +26,8 @@ private final class FakeLiveEngine: HangyeolLiveSession, @unchecked Sendable {
     var replaceCount = 0
     var listedTables: [TableInfo] = []
     var setCellCalls: [(UInt32, UInt32, UInt32, String)] = []
+    var insertCalls: [(UInt32, UInt32, UInt32, String)] = []
+    var deleteCalls: [(UInt32, UInt32, UInt32, UInt32)] = []
 
     func open(data: Data, type: DocumentFileType) throws -> DocumentModel {
         DocumentModel(
@@ -62,6 +64,14 @@ private final class FakeLiveEngine: HangyeolLiveSession, @unchecked Sendable {
 
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
         setCellCalls.append((table, row, col, text))
+    }
+
+    func insertText(section: UInt32, paragraph: UInt32, charOffset: UInt32, text: String) throws {
+        insertCalls.append((section, paragraph, charOffset, text))
+    }
+
+    func deleteRange(section: UInt32, paragraph: UInt32, charOffset: UInt32, count: UInt32) throws {
+        deleteCalls.append((section, paragraph, charOffset, count))
     }
 }
 
@@ -211,6 +221,54 @@ final class DocumentSessionTests: XCTestCase {
         XCTAssertEqual(document.model.metadata.title, "제목")
     }
 
+    func testInsertTextMarksDocumentDirtyOnBoundSession() throws {
+        let live = FakeLiveEngine()
+        var document = HangyeolDocument(
+            model: DocumentModel(
+                metadata: DocumentMetadata(title: "제목", sourceType: .hwpx),
+                blocks: [.paragraph(ParagraphBlock(text: "원본"))]
+            ),
+            session: DocumentSession(engine: live)
+        )
+        XCTAssertFalse(document.hasUnsavedEdits)
+        XCTAssertTrue(document.session.canEdit)
+        XCTAssertTrue(document.session.canEditParagraphs)
+        XCTAssertEqual(document.session.canEditParagraphs, document.session.canReplace)
+
+        try document.insertText(section: 0, paragraph: 0, charOffset: 0, text: "앞")
+        XCTAssertEqual(live.insertCalls.count, 1)
+        XCTAssertEqual(live.insertCalls[0].0, 0)
+        XCTAssertEqual(live.insertCalls[0].1, 0)
+        XCTAssertEqual(live.insertCalls[0].2, 0)
+        XCTAssertEqual(live.insertCalls[0].3, "앞")
+        XCTAssertTrue(document.hasUnsavedEdits)
+        XCTAssertEqual(document.model.plainText, "replaced")
+        XCTAssertEqual(document.model.metadata.title, "제목")
+    }
+
+    func testDeleteRangeMarksDocumentDirtyOnBoundSession() throws {
+        let live = FakeLiveEngine()
+        var document = HangyeolDocument(
+            model: DocumentModel(
+                metadata: DocumentMetadata(title: "제목", sourceType: .hwpx),
+                blocks: [.paragraph(ParagraphBlock(text: "원본"))]
+            ),
+            session: DocumentSession(engine: live)
+        )
+        XCTAssertFalse(document.hasUnsavedEdits)
+        XCTAssertTrue(document.session.canEditParagraphs)
+
+        try document.deleteRange(section: 0, paragraph: 0, charOffset: 0, count: 1)
+        XCTAssertEqual(live.deleteCalls.count, 1)
+        XCTAssertEqual(live.deleteCalls[0].0, 0)
+        XCTAssertEqual(live.deleteCalls[0].1, 0)
+        XCTAssertEqual(live.deleteCalls[0].2, 0)
+        XCTAssertEqual(live.deleteCalls[0].3, 1)
+        XCTAssertTrue(document.hasUnsavedEdits)
+        XCTAssertEqual(document.model.plainText, "replaced")
+        XCTAssertEqual(document.model.metadata.title, "제목")
+    }
+
     func testCellApisOnMockThrowNotYetImplemented() {
         let session = DocumentSession(engine: MockEngine())
         XCTAssertFalse(session.canEditCells)
@@ -237,6 +295,54 @@ final class DocumentSessionTests: XCTestCase {
             }
         }
         XCTAssertFalse(document.hasUnsavedEdits)
+    }
+
+    func testParagraphApisOnMockThrowNotYetImplemented() {
+        let session = DocumentSession(engine: MockEngine())
+        XCTAssertFalse(session.canEdit)
+        XCTAssertFalse(session.canEditParagraphs)
+        XCTAssertThrowsError(try session.insertText(section: 0, paragraph: 0, charOffset: 0, text: "x")) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertThrowsError(try session.deleteRange(section: 0, paragraph: 0, charOffset: 0, count: 1)) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+
+        var document = HangyeolDocument(model: MockEngine.sampleDocument(), session: session)
+        XCTAssertThrowsError(try document.insertText(section: 0, paragraph: 0, charOffset: 0, text: "x")) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertThrowsError(try document.deleteRange(section: 0, paragraph: 0, charOffset: 0, count: 1)) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertFalse(document.hasUnsavedEdits)
+    }
+
+    func testParagraphApisOnClosedLiveSessionThrow() {
+        let live = FakeLiveEngine()
+        live.isOpen = false
+        let session = DocumentSession(engine: live)
+        XCTAssertFalse(session.canEditParagraphs)
+        XCTAssertThrowsError(try session.insertText(section: 0, paragraph: 0, charOffset: 0, text: "x")) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertThrowsError(try session.deleteRange(section: 0, paragraph: 0, charOffset: 0, count: 1)) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertTrue(live.insertCalls.isEmpty)
+        XCTAssertTrue(live.deleteCalls.isEmpty)
     }
 
     func testCellApisOnClosedLiveSessionThrow() {

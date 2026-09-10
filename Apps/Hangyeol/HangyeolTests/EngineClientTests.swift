@@ -69,6 +69,20 @@ final class EngineClientTests: XCTestCase {
         }
     }
 
+    func testInsertTextAndDeleteRangeOnMockThrowNotYetImplemented() {
+        EngineClient.resetToMock()
+        XCTAssertThrowsError(try EngineClient.insertText(section: 0, paragraph: 0, charOffset: 0, text: "x")) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertThrowsError(try EngineClient.deleteRange(section: 0, paragraph: 0, charOffset: 0, count: 1)) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+    }
+
     func testMakeEngineReturnsIndependentInstances() {
         EngineClient.resetToMock()
         let first = EngineClient.makeEngine()

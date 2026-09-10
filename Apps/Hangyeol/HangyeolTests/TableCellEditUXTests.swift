@@ -46,6 +46,20 @@ private final class CellRecordingEngine: HangyeolLiveSession, @unchecked Sendabl
         }
         setCellCalls.append((table, row, col, text))
     }
+
+    func insertText(section: UInt32, paragraph: UInt32, charOffset: UInt32, text: String) throws {
+        _ = section
+        _ = paragraph
+        _ = charOffset
+        _ = text
+    }
+
+    func deleteRange(section: UInt32, paragraph: UInt32, charOffset: UInt32, count: UInt32) throws {
+        _ = section
+        _ = paragraph
+        _ = charOffset
+        _ = count
+    }
 }
 
 final class TableCellEditUXTests: XCTestCase {

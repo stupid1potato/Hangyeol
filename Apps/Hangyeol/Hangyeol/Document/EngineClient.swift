@@ -15,6 +15,8 @@ protocol HangyeolLiveSession: HangyeolEngine {
     func saveHwpx(to path: String) throws
     func listTables() throws -> [TableInfo]
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws
+    func insertText(section: UInt32, paragraph: UInt32, charOffset: UInt32, text: String) throws
+    func deleteRange(section: UInt32, paragraph: UInt32, charOffset: UInt32, count: UInt32) throws
 }
 
 enum EngineClient {
@@ -114,6 +116,50 @@ enum EngineClient {
             ))
         }
         try session.setCellText(table: table, row: row, col: col, text: text)
+    }
+
+    /// Smoke / insert text against `current` only (tests / process probe).
+    /// Documents must call `HangyeolDocument.insertText` / `DocumentSession.insertText`.
+    static func insertText(
+        section: UInt32,
+        paragraph: UInt32,
+        charOffset: UInt32,
+        text: String
+    ) throws {
+        guard let session = liveSession else {
+            throw HangyeolError.notYetImplemented(String(
+                localized: "error.engine.paragraphMock",
+                defaultValue: "문단 편집 (Mock)"
+            ))
+        }
+        try session.insertText(
+            section: section,
+            paragraph: paragraph,
+            charOffset: charOffset,
+            text: text
+        )
+    }
+
+    /// Smoke / delete range against `current` only (tests / process probe).
+    /// Documents must call `HangyeolDocument.deleteRange` / `DocumentSession.deleteRange`.
+    static func deleteRange(
+        section: UInt32,
+        paragraph: UInt32,
+        charOffset: UInt32,
+        count: UInt32
+    ) throws {
+        guard let session = liveSession else {
+            throw HangyeolError.notYetImplemented(String(
+                localized: "error.engine.paragraphMock",
+                defaultValue: "문단 편집 (Mock)"
+            ))
+        }
+        try session.deleteRange(
+            section: section,
+            paragraph: paragraph,
+            charOffset: charOffset,
+            count: count
+        )
     }
 
     static func refreshDisplayModel(type: DocumentFileType, title: String) throws -> DocumentModel {

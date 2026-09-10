@@ -8,7 +8,7 @@ struct HangyeolDocument: FileDocument {
     var model: DocumentModel
     /// Shared across FileDocument copies of this window; not `EngineClient.current`.
     var session: DocumentSession
-    /// Set when the display model changes via engine replace or cell edit.
+    /// Set when the display model changes via engine replace, cell edit, or paragraph insert/delete.
     var hasUnsavedEdits: Bool
 
     init(model: DocumentModel = .empty, session: DocumentSession? = nil) {
@@ -71,6 +71,46 @@ struct HangyeolDocument: FileDocument {
     /// Apply Kit `setCellText` on **this** document's live session and refresh the display model.
     mutating func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
         try session.setCellText(table: table, row: row, col: col, text: text)
+        model = try session.displayModel(
+            type: model.metadata.sourceType,
+            title: model.metadata.title
+        )
+        hasUnsavedEdits = true
+    }
+
+    /// Apply Kit `insertText` on **this** document's live session and refresh the display model.
+    mutating func insertText(
+        section: UInt32,
+        paragraph: UInt32,
+        charOffset: UInt32,
+        text: String
+    ) throws {
+        try session.insertText(
+            section: section,
+            paragraph: paragraph,
+            charOffset: charOffset,
+            text: text
+        )
+        model = try session.displayModel(
+            type: model.metadata.sourceType,
+            title: model.metadata.title
+        )
+        hasUnsavedEdits = true
+    }
+
+    /// Apply Kit `deleteRange` on **this** document's live session and refresh the display model.
+    mutating func deleteRange(
+        section: UInt32,
+        paragraph: UInt32,
+        charOffset: UInt32,
+        count: UInt32
+    ) throws {
+        try session.deleteRange(
+            section: section,
+            paragraph: paragraph,
+            charOffset: charOffset,
+            count: count
+        )
         model = try session.displayModel(
             type: model.metadata.sourceType,
             title: model.metadata.title
