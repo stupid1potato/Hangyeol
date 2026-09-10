@@ -5,6 +5,8 @@ Hangyeol 엔진(`engine/`)을 **macOS Apple Silicon**용으로 빌드하는 절�
 
 **이 문서는 Mac 빌더용이다.** Cursor Cloud Linux 등 non-Apple 호스트에서는 `aarch64-apple-darwin` / iOS 타깃 바이너리를 만들 수 없다. 아래 명령은 Apple Silicon Mac + Xcode CLT에서 실행한다.
 
+`hg_*` 심볼이 바뀌면 Vendor를 **로컬에서 다시 빌드**한다. 바이너리는 커밋하지 않는다: [vendor-rebuild.md](vendor-rebuild.md).
+
 ## Toolchain
 
 | 핀 | 값 | 근거 |
@@ -213,7 +215,7 @@ XCFramework는 이 크레이트와 **같은** 구현을 담는다. 링크 플래
 
 ## HangyeolKit / Apps 가 나중에 쓰는 법
 
-HangyeolKit **`RealEngine`** 은 Kit 패키지에 있다. XCFramework는 **커밋하지 않는다.** 산출·`nm hg_*` 재현은 위 **로컬 재현 (2026-09-10)** (PR #14). Kit Vendor:
+HangyeolKit **`RealEngine`** 은 Kit 패키지에 있다. XCFramework는 **커밋하지 않는다.** 산출·`nm hg_*` 재현은 위 **로컬 재현 (2026-09-10)** (PR #14). 심볼이 바뀌면 [vendor-rebuild.md](vendor-rebuild.md). Kit Vendor:
 
 ```bash
 mkdir -p Packages/HangyeolKit/Vendor

@@ -38,7 +38,7 @@ ln -s /Users/acb/Hangyeol-xcf-build/engine/target/xcframework/HangyeolEngine.xcf
 
 Or copy the directory to the same Vendor path.
 
-Mac XCFramework **재현 절차** (deps → release copy/symlink, `nm hg_*`): [docs/engine/xcframework.md — 로컬 재현 (2026-09-10)](../../docs/engine/xcframework.md#로컬-재현-2026-09-10) (PR #14). This README does not duplicate that procedure.
+Mac XCFramework **재현 절차** (deps → release copy/symlink, `nm hg_*`): [docs/engine/xcframework.md — 로컬 재현 (2026-09-10)](../../docs/engine/xcframework.md#로컬-재현-2026-09-10) (PR #14). `hg_*` 심볼이 바뀌면 [Vendor rebuild](../../docs/engine/vendor-rebuild.md) — **do not commit binaries**. This README does not duplicate that procedure.
 
 **Env override:** `HANGYEOL_ENGINE_XCFRAMEWORK` — absolute path, or a path relative to `Packages/HangyeolKit`.
 

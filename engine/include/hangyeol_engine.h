@@ -12,8 +12,9 @@
  *
  *   2) Kickoff freeze edit API
  *      hg_plain_text / hg_replace_text / hg_save_hwpx
- *      plus optional hg_insert_text / hg_delete_range
+ *      plus product hg_insert_text / hg_delete_range
  *      plus table: hg_list_tables / hg_set_cell_text
+ *      (future, not implemented: image-meta list — see docs/engine/image-meta.md)
  *
  * Kit mapping (tables):
  *   hg_list_tables     → TableBlock addressing. `hg_table_info.index` is the
@@ -167,7 +168,9 @@ hg_status hg_save_hwpx(
 
 /**
  * Insert UTF-8 `text` at (section, paragraph, char_offset) in the body.
- * Optional freeze helper.
+ * Product gate: plain_text shows the string; hg_save_hwpx clear-before-save
+ * ZIP has 0 hp:linesegarray; reopen still contains it.
+ * Invalid section/paragraph → HG_CORRUPT / CORRUPT.
  */
 hg_status hg_insert_text(
     hg_engine *engine,
@@ -179,7 +182,9 @@ hg_status hg_insert_text(
 
 /**
  * Delete `count` characters at (section, paragraph, char_offset).
- * Optional freeze helper.
+ * Product gate: plain_text drops the range; hg_save_hwpx clear-before-save
+ * ZIP has 0 hp:linesegarray; reopen stays without it.
+ * Invalid section/paragraph → HG_CORRUPT / CORRUPT.
  */
 hg_status hg_delete_range(
     hg_engine *engine,
