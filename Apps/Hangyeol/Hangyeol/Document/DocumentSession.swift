@@ -54,6 +54,9 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
         return (engine as? any HangyeolLiveSession)?.isOpen == true
     }
 
+    /// Real session with an open `hg_engine*` (table cell list/edit).
+    var canEditCells: Bool { canReplace }
+
     func open(data: Data, type: DocumentFileType) throws -> DocumentModel {
         do {
             lastOpenError = nil
@@ -117,6 +120,14 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
         return try session.replaceText(find: find, replace: replace)
     }
 
+    func listTables() throws -> [TableInfo] {
+        try requireOpenLiveSessionForCells().listTables()
+    }
+
+    func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
+        try requireOpenLiveSessionForCells().setCellText(table: table, row: row, col: col, text: text)
+    }
+
     func displayModel(type: DocumentFileType, title: String) throws -> DocumentModel {
         guard let session = liveSession, session.isOpen else {
             throw HangyeolError.notYetImplemented(String(
@@ -146,6 +157,16 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
             lastSaveError = mapped
             throw mapped
         }
+    }
+
+    private func requireOpenLiveSessionForCells() throws -> any HangyeolLiveSession {
+        guard let session = liveSession, session.isOpen else {
+            throw HangyeolError.notYetImplemented(String(
+                localized: "error.engine.cellMock",
+                defaultValue: "표 셀 편집 (Mock)"
+            ))
+        }
+        return session
     }
 
     private func withEngine<T>(_ body: (any HangyeolEngine) throws -> T) throws -> T {

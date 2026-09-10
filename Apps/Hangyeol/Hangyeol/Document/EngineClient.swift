@@ -13,6 +13,8 @@ protocol HangyeolLiveSession: HangyeolEngine {
     func replaceText(find: String, replace: String) throws -> Int
     func displayModel(type: DocumentFileType, title: String) throws -> DocumentModel
     func saveHwpx(to path: String) throws
+    func listTables() throws -> [TableInfo]
+    func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws
 }
 
 enum EngineClient {
@@ -88,6 +90,30 @@ enum EngineClient {
             ))
         }
         return try session.replaceText(find: find, replace: replace)
+    }
+
+    /// Smoke / list tables against `current` only (tests / process probe).
+    /// Documents must call `HangyeolDocument.listTables` / `DocumentSession.listTables`.
+    static func listTables() throws -> [TableInfo] {
+        guard let session = liveSession else {
+            throw HangyeolError.notYetImplemented(String(
+                localized: "error.engine.cellMock",
+                defaultValue: "표 셀 편집 (Mock)"
+            ))
+        }
+        return try session.listTables()
+    }
+
+    /// Smoke / set cell text against `current` only (tests / process probe).
+    /// Documents must call `HangyeolDocument.setCellText` / `DocumentSession.setCellText`.
+    static func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
+        guard let session = liveSession else {
+            throw HangyeolError.notYetImplemented(String(
+                localized: "error.engine.cellMock",
+                defaultValue: "표 셀 편집 (Mock)"
+            ))
+        }
+        try session.setCellText(table: table, row: row, col: col, text: text)
     }
 
     static func refreshDisplayModel(type: DocumentFileType, title: String) throws -> DocumentModel {

@@ -45,6 +45,23 @@ final class HangyeolDocumentTests: XCTestCase {
         XCTAssertFalse(a.session === b.session)
     }
 
+    func testCellApisOnUntitledMockDocumentThrowNotYetImplemented() {
+        EngineClient.resetToMock()
+        var document = HangyeolDocument()
+        XCTAssertFalse(document.session.canEditCells)
+        XCTAssertThrowsError(try document.listTables()) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertThrowsError(try document.setCellText(table: 0, row: 0, col: 0, text: "x")) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertFalse(document.hasUnsavedEdits)
+    }
+
     func testOpenConfigurationDoesNotUseProcessSingleton() throws {
         EngineClient.resetToMock()
         var snapshot = MockEngine.sampleDocument()

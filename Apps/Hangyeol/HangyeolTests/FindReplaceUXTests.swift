@@ -33,6 +33,15 @@ private final class RecordingLiveEngine: HangyeolLiveSession, @unchecked Sendabl
     func saveHwpx(to path: String) throws {
         try Data().write(to: URL(fileURLWithPath: path))
     }
+
+    func listTables() throws -> [TableInfo] { [] }
+
+    func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
+        _ = table
+        _ = row
+        _ = col
+        _ = text
+    }
 }
 
 final class FindReplaceUXTests: XCTestCase {
