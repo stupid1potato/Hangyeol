@@ -45,13 +45,13 @@ struct TableEditSurface: Equatable, Identifiable {
 }
 
 enum StructuredTextItem: Equatable, Identifiable {
-    case paragraph(ParagraphBlock)
+    case paragraph(ParagraphEditSurface)
     case table(TableEditSurface)
 
     var id: String {
         switch self {
-        case .paragraph(let paragraph):
-            return "p-\(paragraph.id.uuidString)"
+        case .paragraph(let surface):
+            return "p-\(surface.id)"
         case .table(let surface):
             return "t-\(surface.id)"
         }
@@ -59,6 +59,13 @@ enum StructuredTextItem: Equatable, Identifiable {
 
     var isEditableTable: Bool {
         if case .table(let surface) = self {
+            return surface.editable
+        }
+        return false
+    }
+
+    var isEditableParagraph: Bool {
+        if case .paragraph(let surface) = self {
             return surface.editable
         }
         return false
@@ -72,7 +79,8 @@ enum TableEditMapping {
     static func items(
         model: DocumentModel,
         engineTables: [TableInfo],
-        canEditCells: Bool
+        canEditCells: Bool,
+        canEditParagraphs: Bool = false
     ) -> [StructuredTextItem] {
         let displayTables = model.blocks.compactMap { block -> TableBlock? in
             if case .table(let table) = block { return table }
@@ -80,13 +88,21 @@ enum TableEditMapping {
         }
 
         if !displayTables.isEmpty {
-            var ordinal = 0
+            var tableOrdinal = 0
+            var bodyOrdinal = 0
             return model.blocks.map { block in
                 switch block {
                 case .paragraph(let paragraph):
-                    return .paragraph(paragraph)
+                    let surface = ParagraphEditMapping.surface(
+                        paragraph: paragraph,
+                        bodyOrdinal: bodyOrdinal,
+                        engineTables: engineTables,
+                        canEditParagraphs: canEditParagraphs
+                    )
+                    bodyOrdinal += 1
+                    return .paragraph(surface)
                 case .table(let table):
-                    let info = engineTables.indices.contains(ordinal) ? engineTables[ordinal] : nil
+                    let info = engineTables.indices.contains(tableOrdinal) ? engineTables[tableOrdinal] : nil
                     let engineIndex = engineIndexIfCompatible(display: table, info: info)
                     let surface = TableEditSurface(
                         id: table.id.uuidString,
@@ -94,22 +110,37 @@ enum TableEditMapping {
                         table: table,
                         editable: canEditCells && engineIndex != nil
                     )
-                    ordinal += 1
+                    tableOrdinal += 1
                     return .table(surface)
                 }
             }
         }
 
-        guard canEditCells, !engineTables.isEmpty else {
+        // Peel cell slots whenever `listTables()` returned grids so body
+        // paragraphs are not addressed as `insertText` targets.
+        guard !engineTables.isEmpty else {
+            var bodyOrdinal = 0
             return model.blocks.compactMap { block in
                 if case .paragraph(let paragraph) = block {
-                    return .paragraph(paragraph)
+                    let surface = ParagraphEditMapping.surface(
+                        paragraph: paragraph,
+                        bodyOrdinal: bodyOrdinal,
+                        engineTables: engineTables,
+                        canEditParagraphs: canEditParagraphs
+                    )
+                    bodyOrdinal += 1
+                    return .paragraph(surface)
                 }
                 return nil
             }
         }
 
-        return synthesizedItems(from: model, engineTables: engineTables)
+        return synthesizedItems(
+            from: model,
+            engineTables: engineTables,
+            canEditCells: canEditCells,
+            canEditParagraphs: canEditParagraphs
+        )
     }
 
     /// Display table ↔ engine table only when the grid size matches.
@@ -126,7 +157,9 @@ enum TableEditMapping {
     /// engine grids in document order (`rows * cols` slots per table).
     static func synthesizedItems(
         from model: DocumentModel,
-        engineTables: [TableInfo]
+        engineTables: [TableInfo],
+        canEditCells: Bool,
+        canEditParagraphs: Bool
     ) -> [StructuredTextItem] {
         let lines = model.blocks.compactMap { block -> String? in
             if case .paragraph(let paragraph) = block { return paragraph.plainText }
@@ -138,7 +171,16 @@ enum TableEditMapping {
         let bodyLines = Array(lines.prefix(bodyCount))
         var cellLines = Array(lines.dropFirst(bodyCount))
 
-        var items: [StructuredTextItem] = bodyLines.map { .paragraph(ParagraphBlock(text: $0)) }
+        var items: [StructuredTextItem] = bodyLines.enumerated().map { index, line in
+            .paragraph(
+                ParagraphEditMapping.surface(
+                    paragraph: ParagraphBlock(text: line),
+                    bodyOrdinal: index,
+                    engineTables: engineTables,
+                    canEditParagraphs: canEditParagraphs
+                )
+            )
+        }
         for info in engineTables {
             let slots = Int(info.rows) * Int(info.cols)
             let values = Array(cellLines.prefix(slots))
@@ -150,7 +192,7 @@ enum TableEditMapping {
                         id: "engine-\(info.index)",
                         engineIndex: info.index,
                         table: table,
-                        editable: true
+                        editable: canEditCells
                     )
                 )
             )

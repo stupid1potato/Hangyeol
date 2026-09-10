@@ -84,6 +84,43 @@ enum L10n {
     )
     static let printStub = String(localized: "print.stub", defaultValue: "인쇄는 아직 지원하지 않습니다.")
 
+    static let paragraphEditLiveNote = String(
+        localized: "paragraph.edit.live",
+        defaultValue: "문단은 이 문서의 열린 세션에 반영됩니다. 허브-A: 첫 문단에 HGINS99 입력 후 HWPX 저장."
+    )
+    static let paragraphEditFailureTitle = String(
+        localized: "sheet.paragraph.title",
+        defaultValue: "문단을 고치지 못했습니다"
+    )
+    static let paragraphEditRetryHint = String(
+        localized: "sheet.paragraph.retryHint",
+        defaultValue: "같은 문단에 다시 입력합니다."
+    )
+    static let paragraphEmpty = String(localized: "paragraph.empty", defaultValue: "빈 문단")
+
+    static func paragraphA11y(ordinal: Int, text: String, editable: Bool) -> String {
+        let body = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? paragraphEmpty
+            : text
+        if editable {
+            return String(
+                format: String(
+                    localized: "paragraph.a11y.edit",
+                    defaultValue: "문단 %d을 편집합니다, %@"
+                ),
+                locale: Locale(identifier: "ko_KR"),
+                ordinal,
+                body
+            )
+        }
+        return String(
+            format: String(localized: "paragraph.a11y", defaultValue: "문단 %d, %@"),
+            locale: Locale(identifier: "ko_KR"),
+            ordinal,
+            body
+        )
+    }
+
     static let tableEditLiveNote = String(
         localized: "table.edit.live",
         defaultValue: "표 칸은 이 문서의 열린 세션에 반영됩니다. 허브-A: (0,0)에 HGSET99 입력 후 HWPX 저장."

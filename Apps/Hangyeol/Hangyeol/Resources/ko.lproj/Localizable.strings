@@ -52,6 +52,13 @@
 "error.engine.replaceMock" = "찾기/바꾸기 (Mock)";
 "error.engine.saveHwpxMock" = "HWPX 엔진 저장 (Mock)";
 "print.stub" = "인쇄는 아직 지원하지 않습니다.";
+"paragraph.edit.live" = "문단은 이 문서의 열린 세션에 반영됩니다. 허브-A: 첫 문단에 HGINS99 입력 후 HWPX 저장.";
+"sheet.paragraph.title" = "문단을 고치지 못했습니다";
+"sheet.paragraph.retryHint" = "같은 문단에 다시 입력합니다.";
+"paragraph.empty" = "빈 문단";
+"paragraph.a11y" = "문단 %d, %@";
+"paragraph.a11y.edit" = "문단 %d을 편집합니다, %@";
+"error.engine.paragraphMock" = "문단 편집 (Mock)";
 "table.edit.live" = "표 칸은 이 문서의 열린 세션에 반영됩니다. 허브-A: (0,0)에 HGSET99 입력 후 HWPX 저장.";
 "sheet.tableCell.title" = "표 칸을 고치지 못했습니다";
 "sheet.tableCell.retryHint" = "같은 칸에 다시 입력합니다.";
