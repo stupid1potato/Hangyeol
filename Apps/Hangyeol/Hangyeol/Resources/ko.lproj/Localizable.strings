@@ -1,0 +1,49 @@
+/* 한결 — Korean UI copy */
+
+"app.name" = "한결";
+"app.tagline" = "한글 문서를 열고 본문과 표를 확인하세요.";
+"document.untitled" = "제목 없음";
+
+"action.openSample" = "샘플 문서 열기";
+"action.openDocument" = "문서 열기…";
+"action.exportPDF" = "PDF로 보내기…";
+"action.print" = "인쇄…";
+"action.find" = "찾기…";
+"find.query" = "찾기";
+"find.replace" = "바꾸기";
+"find.next" = "다음";
+"find.replaceAction" = "바꾸기";
+"action.close" = "닫기";
+"action.ok" = "확인";
+"action.retry" = "다시 시도";
+"action.cancel" = "취소";
+
+"menu.help" = "한결 도움말";
+"menu.about" = "한결 정보";
+"menu.fileHint" = "파일";
+"menu.editHint" = "편집";
+
+"sheet.error.title" = "오류";
+"sheet.saveFailure.title" = "저장에 실패했습니다";
+"empty.recents" = "최근 문서";
+"empty.recentsNone" = "최근 문서가 없습니다.";
+"empty.week1" = "1주차 미리보기 · 실제 HWP 엔진은 아직 연결되지 않았습니다.";
+"find.stub" = "찾기/바꾸기는 아직 동작하지 않습니다.";
+"help.body" = "한결은 macOS에서 HWP/HWPX 문서를 열기 위한 앱입니다. 1주차 스켈레톤에서는 모의 엔진이 한국어 본문과 표 예시를 보여 줍니다.";
+"print.stub" = "인쇄는 아직 지원하지 않습니다.";
+"sample.title" = "한결 샘플 문서";
+
+"error.engine.mockFail" = "모의 엔진이 문서를 열 수 없습니다.";
+"error.emptyFile" = "파일 내용이 비어 있습니다.";
+"error.sampleNotFound" = "샘플 문서를 찾을 수 없습니다.";
+"error.engineFailed" = "문서를 열지 못했습니다. %@";
+"error.saveFailed" = "저장하지 못했습니다. %@";
+"error.bookmarkFailed" = "파일 접근 권한을 유지하지 못했습니다. %@";
+"error.notYetImplemented" = "%@은(는) 아직 지원하지 않습니다.";
+"error.emptyFile.recovery" = "다른 파일을 선택해 보세요.";
+"error.sampleNotFound.recovery" = "앱을 다시 설치하거나 새 문서로 시작하세요.";
+"error.engineFailed.recovery" = "파일이 손상되지 않았는지 확인하세요.";
+"error.saveFailed.recovery" = "저장 위치를 바꾸거나 권한을 확인하세요.";
+"error.bookmarkFailed.recovery" = "파일을 다시 열어 주세요.";
+"error.notYetImplemented.recovery" = "이후 주 차에 제공될 예정입니다.";
+"error.pdf.context" = "PDF 파일을 만들 수 없습니다.";
