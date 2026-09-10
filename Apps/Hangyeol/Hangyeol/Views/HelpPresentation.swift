@@ -22,8 +22,12 @@ struct HelpPresentation: Equatable {
             limitsTitle: L10n.helpKnownLimitsTitle,
             limits: [
                 Limit(id: "layout", text: L10n.helpLimitLayout),
-                Limit(id: "wysiwyg", text: L10n.helpLimitWysiwyg),
-                Limit(id: "hwp-save", text: L10n.helpLimitHwpSave)
+                Limit(id: "hwp-save", text: L10n.helpLimitHwpSave),
+                Limit(id: "encrypted", text: L10n.helpLimitEncrypted),
+                Limit(id: "open-errors", text: L10n.helpLimitOpenErrors),
+                Limit(id: "edit-subset", text: L10n.helpLimitEditSubset),
+                Limit(id: "pdf-print", text: L10n.helpLimitPdfPrint),
+                Limit(id: "mvp-out", text: L10n.helpLimitMvpOut)
             ]
         )
     }

@@ -195,15 +195,31 @@ enum L10n {
     )
     static let helpLimitLayout = String(
         localized: "help.limits.layout",
-        defaultValue: "조판은 한컴/HWP와 같지 않습니다. 한결은 본문과 표를 보여 줍니다."
-    )
-    static let helpLimitWysiwyg = String(
-        localized: "help.limits.wysiwyg",
-        defaultValue: "보이는 대로 편집(WYSIWYG)은 없습니다."
+        defaultValue: "조판은 한/글과 픽셀 단위로 같지 않습니다. 보이는 대로 편집(WYSIWYG)은 없고, 본문과 표를 구조화해 보여 줍니다."
     )
     static let helpLimitHwpSave = String(
         localized: "help.limits.hwpSave",
-        defaultValue: ".hwp는 읽고, 저장은 HWPX로만 됩니다."
+        defaultValue: ".hwp는 읽을 수 있고, 저장은 HWPX로만 됩니다."
+    )
+    static let helpLimitEncrypted = String(
+        localized: "help.limits.encrypted",
+        defaultValue: "암호가 걸린 문서는 열 수 없습니다. 암호를 풀지 않습니다."
+    )
+    static let helpLimitOpenErrors = String(
+        localized: "help.limits.openErrors",
+        defaultValue: "손상되었거나, 이 버전·형식이 아니거나, 고른 파일이 잘못되면 안내가 열립니다."
+    )
+    static let helpLimitEditSubset = String(
+        localized: "help.limits.editSubset",
+        defaultValue: "표 칸과 문단만 고칠 수 있습니다."
+    )
+    static let helpLimitPdfPrint = String(
+        localized: "help.limits.pdfPrint",
+        defaultValue: "PDF와 인쇄는 본문·표 글자만 보냅니다. 한/글 조판 그대로 찍지 않습니다."
+    )
+    static let helpLimitMvpOut = String(
+        localized: "help.limits.mvpOut",
+        defaultValue: "자동 업데이트와 미리보기는 이 버전에 없습니다."
     )
 
     static let paragraphEditLiveNote = String(

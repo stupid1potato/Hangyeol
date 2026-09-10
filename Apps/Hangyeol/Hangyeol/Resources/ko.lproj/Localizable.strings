@@ -74,9 +74,13 @@
 "find.replacedCount" = "%d곳을 바꿨습니다.";
 "help.body" = "한결은 macOS에서 HWP/HWPX 문서를 엽니다. 파일 → 열기… 를 누르거나 파일을 창이나 Dock 아이콘에 놓으세요. 본문과 표를 확인하고, PDF로 보내거나 인쇄할 수 있습니다.";
 "help.limits.title" = "알려진 한계";
-"help.limits.layout" = "조판은 한컴/HWP와 같지 않습니다. 한결은 본문과 표를 보여 줍니다.";
-"help.limits.wysiwyg" = "보이는 대로 편집(WYSIWYG)은 없습니다.";
-"help.limits.hwpSave" = ".hwp는 읽고, 저장은 HWPX로만 됩니다.";
+"help.limits.layout" = "조판은 한/글과 픽셀 단위로 같지 않습니다. 보이는 대로 편집(WYSIWYG)은 없고, 본문과 표를 구조화해 보여 줍니다.";
+"help.limits.hwpSave" = ".hwp는 읽을 수 있고, 저장은 HWPX로만 됩니다.";
+"help.limits.encrypted" = "암호가 걸린 문서는 열 수 없습니다. 암호를 풀지 않습니다.";
+"help.limits.openErrors" = "손상되었거나, 이 버전·형식이 아니거나, 고른 파일이 잘못되면 안내가 열립니다.";
+"help.limits.editSubset" = "표 칸과 문단만 고칠 수 있습니다.";
+"help.limits.pdfPrint" = "PDF와 인쇄는 본문·표 글자만 보냅니다. 한/글 조판 그대로 찍지 않습니다.";
+"help.limits.mvpOut" = "자동 업데이트와 미리보기는 이 버전에 없습니다.";
 "error.engine.notLinked" = "HangyeolEngine XCFramework가 연결되지 않았습니다.";
 "error.engine.unimplemented" = "엔진 기능";
 "error.engine.replaceMock" = "찾기/바꾸기 (Mock)";
