@@ -9,7 +9,7 @@ Week-3 order: **header sync (this package) → wait XCFramework → RealEngine �
 ## Engine (팀장3 확정)
 
 - **1순위:** rhwp **DocumentCore** 코어 서브셋 (parser / serial / edit only; renderer · layout · WASM 금지)
-- **Toolchain:** rustc **≥ 1.88** (Hangyeol product pin; rhwp cargo graph may need ≥ 1.89; CI uses 1.93.1)
+- **Toolchain:** rustc **≥ 1.89** (Hangyeol product pin; pinned rhwp cargo graph / `aes 0.9.3`; CI uses 1.93.1)
 - **Save:** `hg_save(HWPX)` and freeze `hg_save_hwpx` **must** clear `line_segs` on body + table-cell paragraphs **before** serialize (`hp:linesegarray` count 0). This package does not implement that — header/README contract only.
 
 ## What this package is
