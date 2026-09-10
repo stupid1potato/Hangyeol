@@ -9,6 +9,7 @@ macOS 14+ 네이티브 앱. `.hwp` / `.hwpx` 열기 · 본문·표 수정 · HWP
 - Engine (Week1): [openhwp PoC 게이트 보고](docs/openhwp-poc-gate-report.md) · [엔진 우선순위 2026-09-10](docs/engine-priority-2026-09-10.md)
 - Engine (Week1): [rhwp 코어 서브셋 게이트 표](docs/rhwp-core-subset-gate.md)
 - Engine: [Apple Silicon XCFramework / staticlib](docs/engine/xcframework.md)
+- Engine (Week3): [FFI 체크리스트 (앱 링크 · Mock→Real)](docs/week3-ffi-checklist.md)
 
 ## 모노레포 구조
 

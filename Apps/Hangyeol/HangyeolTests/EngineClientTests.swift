@@ -1,0 +1,57 @@
+import XCTest
+@testable import Hangyeol
+
+final class EngineClientTests: XCTestCase {
+    override func tearDown() {
+        UserDefaults.standard.removeObject(forKey: EngineClient.useMockFlagKey)
+        EngineClient.resetToDefault()
+        super.tearDown()
+    }
+
+    func testResetToMockAlwaysInstallsMockEngine() throws {
+        EngineClient.resetToMock()
+        XCTAssertTrue(EngineClient.current is MockEngine)
+        XCTAssertTrue(EngineClient.isUsingMock)
+        XCTAssertNil(EngineClient.liveSession)
+
+        let model = try EngineClient.current.open(data: Data("sample".utf8), type: .hwpx)
+        XCTAssertFalse(model.isEmpty)
+        XCTAssertTrue(model.plainText.contains("한결"))
+    }
+
+    func testUserDefaultsFlagForcesMockInFactory() {
+        UserDefaults.standard.set(true, forKey: EngineClient.useMockFlagKey)
+        XCTAssertTrue(EngineClient.prefersMock)
+        XCTAssertTrue(EngineClient.makeDefaultEngine() is MockEngine)
+    }
+
+    func testDefaultEngineIsRealOnlyWhenLinkedAndNotForced() {
+        UserDefaults.standard.removeObject(forKey: EngineClient.useMockFlagKey)
+        let engine = EngineClient.makeDefaultEngine()
+        if KitRealEngine.isAvailable && !EngineClient.environmentForcesMock {
+            XCTAssertTrue(engine is KitRealEngine)
+        } else {
+            XCTAssertTrue(engine is MockEngine)
+        }
+    }
+
+    func testResetToDefaultRestoresFactoryChoice() {
+        EngineClient.resetToMock()
+        XCTAssertTrue(EngineClient.current is MockEngine)
+        EngineClient.resetToDefault()
+        if KitRealEngine.isAvailable && !EngineClient.prefersMock {
+            XCTAssertTrue(EngineClient.current is KitRealEngine)
+        } else {
+            XCTAssertTrue(EngineClient.current is MockEngine)
+        }
+    }
+
+    func testReplaceOnMockThrowsNotYetImplemented() {
+        EngineClient.resetToMock()
+        XCTAssertThrowsError(try EngineClient.replaceText(find: "1", replace: "HGPOC99")) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+    }
+}

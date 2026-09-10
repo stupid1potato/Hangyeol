@@ -25,8 +25,9 @@ final class HangyeolDocumentTests: XCTestCase {
         XCTAssertEqual(UTType.hangyeolHwp.identifier, "org.hangyeol.hwp")
     }
 
-    func testEngineClientDefaultsToMock() throws {
+    func testEngineClientResetToMockStillOpensSample() throws {
         EngineClient.resetToMock()
+        XCTAssertTrue(EngineClient.current is MockEngine)
         let model = try EngineClient.current.open(data: Data("sample".utf8), type: .hwpx)
         XCTAssertFalse(model.isEmpty)
     }

@@ -220,14 +220,15 @@ ln -s /Users/acb/Hangyeol-xcf-build/engine/target/xcframework/HangyeolEngine.xcf
 
 `Package.swift`가 Vendor/env를 보면 `binaryTarget` 또는 링커 플래그로 live `hg_*`를 연결하고, 없으면 C stub / `notLinked`로 남는다. 자세한 내용: `Packages/HangyeolKit/README.md`.
 
-**아직 하지 말 것:** `Apps/Hangyeol`에 HangyeolKit import, xcodeproj product, `EngineClient`를 `RealEngine`으로 교체. 앱 라이브 엔진은 **MockEngine**.
+**앱 링크 (week-3 PR2):** `Apps/Hangyeol`은 로컬 SPM으로 HangyeolKit을 연결한다. Kit이 Vendor XCFramework를 링크하면 `KitRealEngine`이 기본 엔진이다. 없으면 Mock. Mock 롤백: `EngineClient.resetToMock()`, 실행 환경 `HANGYEOL_USE_MOCK=1`, 또는 UserDefaults `HANGYEOL_USE_MOCK`.
 
-나중에 (앱 링크 PR):
+앱 링크 후 확인:
 
-1. HangyeolKit을 Xcode 제품으로 연결한다. Kit이 이미 Vendor XCFramework를 링크한다.
+1. HangyeolKit은 Xcode 제품이다. Kit이 이미 Vendor XCFramework를 링크한다. **바이너리는 커밋하지 않는다.**
 2. C ABI 정본은 `engine/include/hangyeol_engine.h` (XCFramework `Headers/`에 복사됨). Kit 헤더 미러는 개발자2가 동기화한다.
 3. Rust `staticlib`를 앱에 넣을 때 링커가 `iconv` / `System` 정도를 요구할 수 있다. **렌더러·WASM 라이브러리로 메우지 말 것.**
 4. cdylib를 쓸 경우 `@rpath` + Embed & Sign.
+5. Mac 스모크: `fixtures/hub_hwpxlib_SimpleTable.hwpx` (manifest **`hub-A`**) 열기 → `1`을 `HGPOC99`로 바꾸기 → HWPX 저장 → `hp:linesegarray` = 0.
 
 ## Mac 한/글 스모크 아티팩트
 

@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// 1주차 스텁. 찾기/바꾸기 UI만 제공하고 본문 검색은 이후 주차에서 연결합니다.
+/// Mock에서는 스텁. Real(`KitRealEngine`) 세션이 있으면 바꾸기가 엔진 `replaceText`로 갑니다.
 struct FindReplaceBar: View {
     @Binding var query: String
     @Binding var replacement: String
+    var liveEngine: Bool = false
     var onFind: () -> Void = {}
     var onReplace: () -> Void = {}
     var onClose: () -> Void = {}
@@ -27,7 +28,7 @@ struct FindReplaceBar: View {
                 }
                 .help(L10n.close)
             }
-            Text(L10n.findStubNote)
+            Text(liveEngine ? L10n.findLiveNote : L10n.findStubNote)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

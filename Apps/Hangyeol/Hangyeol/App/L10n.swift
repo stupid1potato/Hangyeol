@@ -39,12 +39,16 @@ enum L10n {
     static let recentsEmpty = String(localized: "empty.recentsNone", defaultValue: "최근 문서가 없습니다.")
     static let week1Note = String(
         localized: "empty.week1",
-        defaultValue: "파일을 열거나 창에 놓으면 문서가 열립니다. 실제 HWP 엔진은 아직 연결되지 않았습니다."
+        defaultValue: "파일을 열거나 창에 놓으면 문서가 열립니다. XCFramework가 있으면 Real 엔진, 없으면 Mock입니다."
     )
-    static let findStubNote = String(localized: "find.stub", defaultValue: "찾기/바꾸기는 아직 동작하지 않습니다.")
+    static let findStubNote = String(localized: "find.stub", defaultValue: "찾기/바꾸기는 Mock에서는 동작하지 않습니다.")
+    static let findLiveNote = String(
+        localized: "find.live",
+        defaultValue: "바꾸기는 열린 엔진 세션(표 셀 포함)에 적용됩니다. 허브-A 스모크: 1 → HGPOC99 후 HWPX 저장."
+    )
     static let helpBody = String(
         localized: "help.body",
-        defaultValue: "한결은 macOS에서 HWP/HWPX 문서를 여는 앱입니다. 파일 → 열기… 또는 파일을 창이나 Dock 아이콘에 놓아 문서를 여세요. 실제 HWP 엔진은 아직 연결되지 않았습니다."
+        defaultValue: "한결은 macOS에서 HWP/HWPX 문서를 여는 앱입니다. 파일 → 열기… 또는 파일을 창이나 Dock 아이콘에 놓아 문서를 여세요. Mock으로 돌리려면 실행 환경 변수 HANGYEOL_USE_MOCK=1 을 설정하세요."
     )
     static let printStub = String(localized: "print.stub", defaultValue: "인쇄는 아직 지원하지 않습니다.")
 }
