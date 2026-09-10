@@ -15,6 +15,16 @@ final class FileOpeningTests: XCTestCase {
         let identifiers = Set(UTType.hangyeolReadableTypes.map(\.identifier))
         XCTAssertTrue(identifiers.contains(UTType.hangyeolHwpx.identifier))
         XCTAssertTrue(identifiers.contains(UTType.hangyeolHwp.identifier))
+        XCTAssertTrue(identifiers.contains("net.golbin.hop.hwpx"))
+        XCTAssertTrue(identifiers.contains("net.golbin.hop.hwp"))
+        XCTAssertTrue(identifiers.contains("com.haansoft.HancomOfficeViewer.mac.hwpx"))
+        XCTAssertTrue(identifiers.contains("com.haansoft.HancomOfficeViewer.mac.hwp"))
+        if let boundHwpx = UTType(filenameExtension: "hwpx") {
+            XCTAssertTrue(identifiers.contains(boundHwpx.identifier))
+        }
+        if let boundHwp = UTType(filenameExtension: "hwp") {
+            XCTAssertTrue(identifiers.contains(boundHwp.identifier))
+        }
     }
 
     func testDocumentFileTypeFromURL() {
@@ -131,23 +141,22 @@ final class FileOpeningTests: XCTestCase {
         )
 
         XCTAssertEqual(plist["LSSupportsOpeningDocumentsInPlace"] as? Bool, true)
-        XCTAssertNil(
-            plist["UTImportedTypeDeclarations"],
-            "Hangyeol owns org.hangyeol.*; do not import a third-party HWP UTI"
-        )
 
         XCTAssertEqual(UTType.hangyeolHwpx.identifier, "org.hangyeol.hwpx")
         XCTAssertEqual(UTType.hangyeolHwp.identifier, "org.hangyeol.hwp")
         XCTAssertEqual(DocumentFileType.hwpx.typeIdentifier, UTType.hangyeolHwpx.identifier)
         XCTAssertEqual(DocumentFileType.hwp.typeIdentifier, UTType.hangyeolHwp.identifier)
-        XCTAssertEqual(
-            UTType.hangyeolReadableTypes.map(\.identifier),
-            [UTType.hangyeolHwpx.identifier, UTType.hangyeolHwp.identifier]
-        )
 
-        let expected: [(id: String, ext: String)] = [
-            (UTType.hangyeolHwpx.identifier, "hwpx"),
-            (UTType.hangyeolHwp.identifier, "hwp"),
+        let readable = UTType.hangyeolReadableTypes.map(\.identifier)
+        XCTAssertEqual(readable.first, UTType.hangyeolHwpx.identifier)
+        XCTAssertTrue(readable.contains(UTType.hangyeolHwp.identifier))
+        for imported in UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers {
+            XCTAssertTrue(readable.contains(imported), "hangyeolReadableTypes missing \(imported)")
+        }
+
+        let expected: [(id: String, ext: String, imported: [String])] = [
+            (UTType.hangyeolHwpx.identifier, "hwpx", UTType.hangyeolImportedHwpxIdentifiers),
+            (UTType.hangyeolHwp.identifier, "hwp", UTType.hangyeolImportedHwpIdentifiers),
         ]
 
         let documents = try XCTUnwrap(plist["CFBundleDocumentTypes"] as? [[String: Any]])
@@ -156,7 +165,9 @@ final class FileOpeningTests: XCTestCase {
             let doc = documents[index]
             XCTAssertEqual(doc["CFBundleTypeRole"] as? String, "Editor")
             XCTAssertEqual(doc["LSHandlerRank"] as? String, "Owner")
-            XCTAssertEqual(doc["LSItemContentTypes"] as? [String], [spec.id])
+            let contentTypes = try XCTUnwrap(doc["LSItemContentTypes"] as? [String])
+            XCTAssertEqual(contentTypes.first, spec.id)
+            XCTAssertEqual(Set(contentTypes), Set([spec.id] + spec.imported))
             XCTAssertEqual(doc["CFBundleTypeExtensions"] as? [String], [spec.ext])
         }
 
@@ -170,6 +181,20 @@ final class FileOpeningTests: XCTestCase {
             let conforms = try XCTUnwrap(uti["UTTypeConformsTo"] as? [String])
             XCTAssertTrue(conforms.contains("public.data"), spec.id)
             XCTAssertTrue(conforms.contains("public.content"), spec.id)
+        }
+
+        let importedDecls = try XCTUnwrap(plist["UTImportedTypeDeclarations"] as? [[String: Any]])
+        let importedIDs = importedDecls.compactMap { $0["UTTypeIdentifier"] as? String }
+        XCTAssertEqual(
+            Set(importedIDs),
+            Set(UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers)
+        )
+        for uti in importedDecls {
+            XCTAssertNil(uti["UTTypeIconFile"], "do not bundle third-party type icons")
+            XCTAssertNil(uti["UTTypeIconName"], "do not bundle third-party type icons")
+            let tags = try XCTUnwrap(uti["UTTypeTagSpecification"] as? [String: Any])
+            let ext = try XCTUnwrap((tags["public.filename-extension"] as? [String])?.first)
+            XCTAssertTrue(["hwpx", "hwp"].contains(ext), ext)
         }
     }
 

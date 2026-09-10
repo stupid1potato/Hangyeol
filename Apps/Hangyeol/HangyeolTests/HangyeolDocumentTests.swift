@@ -10,12 +10,50 @@ final class HangyeolDocumentTests: XCTestCase {
     }
 
     func testReadableTypesIncludeHwpxAndHwp() {
-        XCTAssertTrue(HangyeolDocument.readableContentTypes.contains(.hangyeolHwpx))
-        XCTAssertTrue(HangyeolDocument.readableContentTypes.contains(.hangyeolHwp))
-        XCTAssertEqual(
-            HangyeolDocument.readableContentTypes.map(\.identifier),
-            [UTType.hangyeolHwpx.identifier, UTType.hangyeolHwp.identifier]
+        let identifiers = HangyeolDocument.readableContentTypes.map(\.identifier)
+        XCTAssertEqual(identifiers.first, UTType.hangyeolHwpx.identifier)
+        XCTAssertTrue(identifiers.contains(UTType.hangyeolHwpx.identifier))
+        XCTAssertTrue(identifiers.contains(UTType.hangyeolHwp.identifier))
+        for imported in UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers {
+            XCTAssertTrue(identifiers.contains(imported), "readableContentTypes missing imported \(imported)")
+        }
+    }
+
+    func testFileTypeMapsImportedHopHwpxWithoutRequiringHopInstalled() {
+        let hop = UTType(importedAs: "net.golbin.hop.hwpx")
+        XCTAssertNotEqual(hop.identifier, UTType.hangyeolHwpx.identifier)
+        XCTAssertTrue(
+            HangyeolDocument.readableContentTypes.contains { $0.identifier == hop.identifier }
         )
+        XCTAssertEqual(HangyeolDocument.fileType(from: hop), .hwpx)
+        XCTAssertEqual(DocumentFileType(typeIdentifier: hop.identifier), .hwpx)
+    }
+
+    func testFileTypeMapsImportedHopHwpWithoutRequiringHopInstalled() {
+        let hop = UTType(importedAs: "net.golbin.hop.hwp")
+        XCTAssertNotEqual(hop.identifier, UTType.hangyeolHwp.identifier)
+        XCTAssertTrue(
+            HangyeolDocument.readableContentTypes.contains { $0.identifier == hop.identifier }
+        )
+        XCTAssertEqual(HangyeolDocument.fileType(from: hop), .hwp)
+        XCTAssertEqual(DocumentFileType(typeIdentifier: hop.identifier), .hwp)
+    }
+
+    func testFilenameExtensionBoundTypesAreReadableAndMapToDocumentFileType() {
+        if let hwpx = UTType(filenameExtension: "hwpx") {
+            XCTAssertTrue(
+                HangyeolDocument.readableContentTypes.contains { $0.identifier == hwpx.identifier },
+                "DocumentGroup must accept the system-bound .hwpx UTI (\(hwpx.identifier))"
+            )
+            XCTAssertEqual(HangyeolDocument.fileType(from: hwpx), .hwpx)
+        }
+        if let hwp = UTType(filenameExtension: "hwp") {
+            XCTAssertTrue(
+                HangyeolDocument.readableContentTypes.contains { $0.identifier == hwp.identifier },
+                "DocumentGroup must accept the system-bound .hwp UTI (\(hwp.identifier))"
+            )
+            XCTAssertEqual(HangyeolDocument.fileType(from: hwp), .hwp)
+        }
     }
 
     func testWritableTypeIsHwpxByDefault() {
@@ -29,6 +67,16 @@ final class HangyeolDocumentTests: XCTestCase {
     func testUTTypeIdentifiers() {
         XCTAssertEqual(UTType.hangyeolHwpx.identifier, "org.hangyeol.hwpx")
         XCTAssertEqual(UTType.hangyeolHwp.identifier, "org.hangyeol.hwp")
+        XCTAssertEqual(HangyeolDocument.fileType(from: .hangyeolHwpx), .hwpx)
+        XCTAssertEqual(HangyeolDocument.fileType(from: .hangyeolHwp), .hwp)
+        XCTAssertEqual(
+            HangyeolDocument.fileType(from: UTType(importedAs: "com.haansoft.HancomOfficeViewer.mac.hwpx")),
+            .hwpx
+        )
+        XCTAssertEqual(
+            HangyeolDocument.fileType(from: UTType(importedAs: "com.haansoft.HancomOfficeViewer.mac.hwp")),
+            .hwp
+        )
     }
 
     func testEngineClientResetToMockStillOpensSample() throws {

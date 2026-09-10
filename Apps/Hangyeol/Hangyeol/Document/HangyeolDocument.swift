@@ -151,11 +151,9 @@ struct HangyeolDocument: FileDocument {
         }
     }
 
-    private static func fileType(from contentType: UTType) -> DocumentFileType {
-        if contentType.conforms(to: .hangyeolHwp) || contentType.identifier == UTType.hangyeolHwp.identifier {
-            return .hwp
-        }
-        return .hwpx
+    /// Testable mapping used by FileDocument open/save configuration.
+    static func fileType(from contentType: UTType) -> DocumentFileType {
+        UTType.hangyeolFileType(from: contentType)
     }
 }
 

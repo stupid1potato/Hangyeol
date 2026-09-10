@@ -1,4 +1,5 @@
 import Foundation
+import UniformTypeIdentifiers
 
 enum DocumentFileType: String, Codable, Sendable, CaseIterable {
     case hwpx
@@ -18,7 +19,13 @@ enum DocumentFileType: String, Codable, Sendable, CaseIterable {
         case "org.hangyeol.hwp":
             self = .hwp
         default:
-            return nil
+            if UTType.hangyeolImportedHwpxIdentifiers.contains(typeIdentifier) {
+                self = .hwpx
+            } else if UTType.hangyeolImportedHwpIdentifiers.contains(typeIdentifier) {
+                self = .hwp
+            } else {
+                return nil
+            }
         }
     }
 
