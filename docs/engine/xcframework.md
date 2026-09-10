@@ -209,7 +209,7 @@ XCFramework는 이 크레이트와 **같은** 구현을 담는다. 링크 플래
 
 ## HangyeolKit / Apps 가 나중에 쓰는 법
 
-HangyeolKit **`RealEngine`** 은 Kit 패키지에 있다. XCFramework는 **커밋하지 않는다.** 로컬 Vendor 또는 env:
+HangyeolKit **`RealEngine`** 은 Kit 패키지에 있다. XCFramework는 **커밋하지 않는다.** 산출·`nm hg_*` 재현은 위 **로컬 재현 (2026-09-10)** (PR #14). Kit Vendor:
 
 ```bash
 mkdir -p Packages/HangyeolKit/Vendor

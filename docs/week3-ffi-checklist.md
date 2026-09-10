@@ -14,7 +14,7 @@ HangyeolKit tracks the engine C ABI. Kit **RealEngine** is implemented; the app 
 
 ## Kit RealEngine (this package — XCFramework not committed)
 
-- [x] Vendor path for a **local** XCFramework (`Packages/HangyeolKit/Vendor/HangyeolEngine.xcframework` or env `HANGYEOL_ENGINE_XCFRAMEWORK`). Gitignored; copy/symlink from the Mac build (`docs/engine/xcframework.md`). Linux CI keeps the C stub.
+- [x] Vendor path for a **local** XCFramework (`Packages/HangyeolKit/Vendor/HangyeolEngine.xcframework` or env `HANGYEOL_ENGINE_XCFRAMEWORK`). Gitignored. Mac **재현 절차** is [docs/engine/xcframework.md — 로컬 재현 (2026-09-10)](engine/xcframework.md#로컬-재현-2026-09-10) (PR #14). Linux CI keeps the C stub.
 - [x] HangyeolKit **`RealEngine`**: owns `hg_engine*`; live `hg_*` when the XCFramework is present (`HANGYEOL_ENGINE_LINKED`); `notLinked` fallback when absent. Freeze ↔ Kit mapping in Kit. **App still unlinked.**
 
 ## Next (app — do not skip ahead)
@@ -22,7 +22,7 @@ HangyeolKit tracks the engine C ABI. Kit **RealEngine** is implemented; the app 
 - [ ] **Then** link HangyeolKit from `Apps/Hangyeol` (xcodeproj product).
 - [ ] Replace `MockEngine` with `RealEngine` in the app only after the step above.
 
-Mac verify of live `hg_*` against the XCFramework is a later step (Linux cannot run the Apple binary).
+Mac XCFramework 재현(`.a` / `nm hg_*`)은 PR #14 문서에 있다. Kit live-`hg_*` 검증은 이후 단계 (Linux cannot run the Apple binary). 이 PR에 앱 링크·Mock 교체는 넣지 않는다.
 
 ## Contracts that must survive the later link
 

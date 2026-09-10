@@ -36,7 +36,9 @@ ln -s /Users/acb/Hangyeol-xcf-build/engine/target/xcframework/HangyeolEngine.xcf
   Packages/HangyeolKit/Vendor/HangyeolEngine.xcframework
 ```
 
-Or copy the directory to the same Vendor path. Build procedure: [docs/engine/xcframework.md](../../docs/engine/xcframework.md).
+Or copy the directory to the same Vendor path.
+
+Mac XCFramework **재현 절차** (deps → release copy/symlink, `nm hg_*`): [docs/engine/xcframework.md — 로컬 재현 (2026-09-10)](../../docs/engine/xcframework.md#로컬-재현-2026-09-10) (PR #14). This README does not duplicate that procedure.
 
 **Env override:** `HANGYEOL_ENGINE_XCFRAMEWORK` — absolute path, or a path relative to `Packages/HangyeolKit`.
 
@@ -72,7 +74,7 @@ Error mapping (`hg_status` + `hg_last_error`):
 
 When the real library is linked, `RealEngine` does **not** throw `notLinked`.
 
-Mac verify (XCFramework + live `hg_*`) is a later step; Linux cannot run the Apple XCFramework.
+Mac XCFramework 재현은 [로컬 재현 (PR #14)](../../docs/engine/xcframework.md#로컬-재현-2026-09-10). Kit live `hg_*` 검증은 이후 단계. Linux cannot run the Apple XCFramework. This package does **not** link `Apps/Hangyeol` or swap `MockEngine`.
 
 ## Status kinds (exactly four)
 
