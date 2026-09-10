@@ -84,9 +84,17 @@ enum L10n {
     )
     static let printStub = String(localized: "print.stub", defaultValue: "인쇄는 아직 지원하지 않습니다.")
 
-    static let tableEditSketchNote = String(
-        localized: "table.edit.sketch",
-        defaultValue: "표 칸은 이 화면에만 반영됩니다. 문서 세션 연결은 이후 버전에서 합니다."
+    static let tableEditLiveNote = String(
+        localized: "table.edit.live",
+        defaultValue: "표 칸은 이 문서의 열린 세션에 반영됩니다. 허브-A: (0,0)에 HGSET99 입력 후 HWPX 저장."
+    )
+    static let tableCellEditFailureTitle = String(
+        localized: "sheet.tableCell.title",
+        defaultValue: "표 칸을 고치지 못했습니다"
+    )
+    static let tableCellEditRetryHint = String(
+        localized: "sheet.tableCell.retryHint",
+        defaultValue: "같은 칸에 다시 입력합니다."
     )
     static let tableEmptyCell = String(localized: "table.cell.empty", defaultValue: "빈 칸")
     static let tableHeaderRole = String(localized: "table.cell.headerRole", defaultValue: "머리글")

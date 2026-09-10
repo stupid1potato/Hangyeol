@@ -1,80 +1,42 @@
 import SwiftUI
 
 struct TableBlockView: View {
-    @Binding var table: TableBlock
+    let table: TableBlock
     var editable: Bool = false
-    /// Optional `(row, col, text)` hook for a later document.setCellText bind.
-    /// Default is local Binding only (no session call).
+    /// `(row, col, text)` after Return / focus loss. Parent maps to engine index.
     var onCommit: ((Int, Int, String) -> Void)? = nil
 
-    private var presentation: TableCellEditPresentation {
-        .make(editable: editable)
-    }
-
-    init(
-        table: Binding<TableBlock>,
-        editable: Bool = false,
-        onCommit: ((Int, Int, String) -> Void)? = nil
-    ) {
-        self._table = table
-        self.editable = editable
-        self.onCommit = onCommit
-    }
-
-    /// Read-only snapshot (current `Text` look).
-    init(table: TableBlock) {
-        self._table = .constant(table)
-        self.editable = false
-        self.onCommit = nil
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            VStack(spacing: 0) {
-                ForEach(Array(table.rows.enumerated()), id: \.element.id) { rowIndex, row in
-                    HStack(spacing: 0) {
-                        ForEach(Array(row.cells.enumerated()), id: \.element.id) { columnIndex, cell in
-                            TableCellView(
-                                row: rowIndex,
-                                column: columnIndex,
-                                isHeader: cell.isHeader,
-                                editable: editable,
-                                text: cellTextBinding(row: rowIndex, col: columnIndex),
-                                onCommit: onCommit
-                            )
-                        }
+        VStack(spacing: 0) {
+            ForEach(Array(table.rows.enumerated()), id: \.offset) { rowIndex, row in
+                HStack(spacing: 0) {
+                    ForEach(Array(row.cells.enumerated()), id: \.offset) { columnIndex, cell in
+                        TableCellView(
+                            row: rowIndex,
+                            column: columnIndex,
+                            isHeader: cell.isHeader,
+                            editable: editable,
+                            text: cell.text,
+                            onCommit: onCommit
+                        )
                     }
-                    Divider()
                 }
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.secondary.opacity(0.35), lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(
-                TableCellEditPresentation.tableAccessibilityLabel(
-                    rowCount: table.rows.count,
-                    columnCount: table.columnCount
-                )
-            )
-            .accessibilityIdentifier("document-table")
-
-            if let stubNote = presentation.stubNote {
-                Text(stubNote)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("table-edit-sketch-note")
+                Divider()
             }
         }
-    }
-
-    private func cellTextBinding(row: Int, col: Int) -> Binding<String> {
-        Binding(
-            get: { TableCellEditFlow.cellText(table, row: row, col: col) },
-            set: { TableCellEditFlow.apply(&table, row: row, col: col, text: $0) }
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.secondary.opacity(0.35), lineWidth: 1)
         )
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(
+            TableCellEditPresentation.tableAccessibilityLabel(
+                rowCount: table.rows.count,
+                columnCount: table.columnCount
+            )
+        )
+        .accessibilityIdentifier("document-table")
     }
 }
 
@@ -83,7 +45,7 @@ private struct TableCellView: View {
     let column: Int
     let isHeader: Bool
     let editable: Bool
-    @Binding var text: String
+    let text: String
     var onCommit: ((Int, Int, String) -> Void)?
 
     @State private var draft: String = ""
@@ -130,8 +92,7 @@ private struct TableCellView: View {
     }
 
     private func commitIfNeeded() {
-        guard draft != text else { return }
-        text = draft
+        guard editable, draft != text else { return }
         onCommit?(row, column, draft)
     }
 }
@@ -146,18 +107,13 @@ private struct TableCellView: View {
     .padding()
 }
 
-#Preview("편집 스케치") {
-    TableBlockEditPreviewHost()
-        .padding()
-}
-
-private struct TableBlockEditPreviewHost: View {
-    @State private var table = TableBlock(
-        headers: ["항목", "내용"],
-        body: [["형식", "HWPX"], ["엔진", "MockEngine"]]
+#Preview("세션 편집") {
+    TableBlockView(
+        table: TableBlock(
+            headers: ["항목", "내용"],
+            body: [["형식", "HWPX"], ["엔진", "Real"]]
+        ),
+        editable: true
     )
-
-    var body: some View {
-        TableBlockView(table: $table, editable: true)
-    }
+    .padding()
 }

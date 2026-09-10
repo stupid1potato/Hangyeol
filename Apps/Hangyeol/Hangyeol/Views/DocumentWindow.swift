@@ -18,6 +18,9 @@ struct DocumentWindow: View {
     @State private var lastReplacementCount: Int?
     @State private var replaceStatusFocusToken = 0
     @State private var presentedError: HangyeolError?
+    @State private var cellEditError: HangyeolError?
+    @State private var lastCellEdit: (table: UInt32, row: Int, col: Int, text: String)?
+    @State private var engineTables: [TableInfo] = []
     @State private var showHelp = false
     @State private var isDropTargeted = false
     @State private var dismissedSaveErrorID: String?
@@ -68,12 +71,11 @@ struct DocumentWindow: View {
                     onOpenRecent: openRecent
                 )
             } else {
-                // Sketch: in-memory TableBlock Binding + onCommit hook only.
-                // Do not call document.listTables / setCellText until #22
-                // merges; a follow-up PR will bind the document API.
                 StructuredTextView(
-                    model: $document.model,
-                    tablesEditable: true
+                    model: document.model,
+                    canEditCells: document.session.canEditCells,
+                    engineTables: engineTables,
+                    onTableCellCommit: commitTableCell
                 )
             }
         }
@@ -138,6 +140,16 @@ struct DocumentWindow: View {
                 presentedError = nil
             }
         }
+        .sheet(item: $cellEditError) { error in
+            ErrorSheet(
+                error: error,
+                title: L10n.tableCellEditFailureTitle,
+                retryTitle: L10n.retry,
+                retryHint: L10n.tableCellEditRetryHint,
+                onRetry: retryLastCellEdit,
+                onDismiss: { cellEditError = nil }
+            )
+        }
         .sheet(item: sessionSaveErrorBinding) { error in
             SaveFailureSheet(
                 error: error,
@@ -189,11 +201,19 @@ struct DocumentWindow: View {
             if let fileURL {
                 recents.noteOpened(fileURL)
             }
+            reloadEngineTables()
         }
         .onChange(of: fileURL) { _, url in
             if let url {
                 recents.noteOpened(url)
             }
+            reloadEngineTables()
+        }
+        .onChange(of: document.hasUnsavedEdits) { _, _ in
+            reloadEngineTables()
+        }
+        .onChange(of: document.session.canEditCells) { _, _ in
+            reloadEngineTables()
         }
         .onChange(of: findQuery) { _, _ in
             lastReplacementCount = nil
@@ -218,6 +238,50 @@ struct DocumentWindow: View {
 
     private func retryDocumentSave() {
         NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
+    }
+
+    private func reloadEngineTables() {
+        guard document.session.canEditCells else {
+            engineTables = []
+            return
+        }
+        do {
+            engineTables = try document.listTables()
+        } catch {
+            engineTables = []
+        }
+    }
+
+    private func commitTableCell(engineIndex: UInt32, row: Int, col: Int, text: String) {
+        lastCellEdit = (engineIndex, row, col, text)
+        switch TableCellEditFlow.commit(
+            canEditCells: document.session.canEditCells,
+            engineTableIndex: engineIndex,
+            row: row,
+            col: col,
+            text: text,
+            perform: { table, cellRow, cellCol, value in
+                var updated = document
+                try updated.setCellText(table: table, row: cellRow, col: cellCol, text: value)
+                document = updated
+            }
+        ) {
+        case .skippedUnavailable, .skippedUnmapped:
+            return
+        case .updated:
+            reloadEngineTables()
+        case .failed(let error):
+            cellEditError = error
+        }
+    }
+
+    private func retryLastCellEdit() {
+        guard let last = lastCellEdit else {
+            cellEditError = nil
+            return
+        }
+        cellEditError = nil
+        commitTableCell(engineIndex: last.table, row: last.row, col: last.col, text: last.text)
     }
 
     private func replaceInDocument() {
@@ -245,6 +309,7 @@ struct DocumentWindow: View {
     private func loadSample() {
         do {
             document.model = try MockEngine.loadBundledSample()
+            reloadEngineTables()
         } catch let error as HangyeolError {
             presentedError = error
         } catch {

@@ -1,41 +1,46 @@
 import SwiftUI
 
 struct StructuredTextView: View {
-    @Binding var model: DocumentModel
-    /// When true, table cells use the in-memory edit sketch (`TextField` + Binding).
-    var tablesEditable: Bool = false
-    /// Per-table `(row, col, text)` hook. Bind to `document.setCellText` after #22.
-    var onTableCellCommit: ((Int, Int, String) -> Void)? = nil
+    let model: DocumentModel
+    var canEditCells: Bool = false
+    var engineTables: [TableInfo] = []
+    /// `(engineTableIndex, row, col, text)` — parent calls `document.setCellText`.
+    var onTableCellCommit: ((UInt32, Int, Int, String) -> Void)? = nil
 
-    init(
-        model: Binding<DocumentModel>,
-        tablesEditable: Bool = false,
-        onTableCellCommit: ((Int, Int, String) -> Void)? = nil
-    ) {
-        self._model = model
-        self.tablesEditable = tablesEditable
-        self.onTableCellCommit = onTableCellCommit
+    private var items: [StructuredTextItem] {
+        TableEditMapping.items(
+            model: model,
+            engineTables: engineTables,
+            canEditCells: canEditCells
+        )
     }
 
-    /// Read-only document snapshot (paragraphs + tables as `Text`).
-    init(model: DocumentModel) {
-        self._model = .constant(model)
-        self.tablesEditable = false
-        self.onTableCellCommit = nil
+    private var presentation: TableCellEditPresentation {
+        .make(canEditCells: canEditCells)
     }
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 18) {
-                ForEach(Array(model.blocks.enumerated()), id: \.element.id) { index, block in
-                    switch block {
+                if let caption = presentation.caption, items.contains(where: \.isEditableTable) {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("table-edit-live-note")
+                }
+
+                ForEach(items) { item in
+                    switch item {
                     case .paragraph(let paragraph):
                         paragraphView(paragraph)
-                    case .table:
+                    case .table(let surface):
                         TableBlockView(
-                            table: DocumentModelTableBinding.binding(model: $model, atBlock: index),
-                            editable: tablesEditable,
-                            onCommit: onTableCellCommit
+                            table: surface.table,
+                            editable: surface.editable,
+                            onCommit: { row, col, text in
+                                guard let engineIndex = surface.engineIndex else { return }
+                                onTableCellCommit?(engineIndex, row, col, text)
+                            }
                         )
                     }
                 }
@@ -66,14 +71,12 @@ struct StructuredTextView: View {
     StructuredTextView(model: MockEngine.sampleDocument())
 }
 
-#Preview("표 편집 스케치") {
-    StructuredTextEditPreviewHost()
-}
-
-private struct StructuredTextEditPreviewHost: View {
-    @State private var model = MockEngine.sampleDocument()
-
-    var body: some View {
-        StructuredTextView(model: $model, tablesEditable: true)
-    }
+#Preview("표 세션 편집") {
+    StructuredTextView(
+        model: MockEngine.sampleDocument(),
+        canEditCells: true,
+        engineTables: [
+            TableInfo(index: 0, section: 0, paragraph: 3, control: 0, rows: 4, cols: 2)
+        ]
+    )
 }
