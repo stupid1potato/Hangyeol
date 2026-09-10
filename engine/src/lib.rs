@@ -77,25 +77,22 @@ fn map_open_hwp_error(err: HwpError) -> HangyeolError {
     HangyeolError::Corrupt
 }
 
-/// Verified Hangyeol recipe: after edits, walk `document_mut` sections /
-/// body paragraphs / table cell paragraphs and `line_segs.clear()`, then
-/// `export_hwpx_native`. Default rhwp export leaves `hp:linesegarray`.
+/// Verified Hangyeol clear-before-save recipe (hub-A gate):
+/// after `replace_all_native`, walk `document_mut` **sections / paras /
+/// table cell paras** and `line_segs.clear()`, then `export_hwpx_native`.
+/// Default rhwp export leaves `hp:linesegarray`.
 pub fn clear_all_line_segs(core: &mut DocumentCore) {
     let document = core.document_mut();
     for section in &mut document.sections {
         for para in &mut section.paragraphs {
-            clear_para_line_segs(para);
-        }
-    }
-}
-
-fn clear_para_line_segs(para: &mut Paragraph) {
-    para.line_segs.clear();
-    for control in &mut para.controls {
-        if let Control::Table(table) = control {
-            for cell in &mut table.cells {
-                for cell_para in &mut cell.paragraphs {
-                    clear_para_line_segs(cell_para);
+            para.line_segs.clear();
+            for control in &mut para.controls {
+                if let Control::Table(table) = control {
+                    for cell in &mut table.cells {
+                        for cell_para in &mut cell.paragraphs {
+                            cell_para.line_segs.clear();
+                        }
+                    }
                 }
             }
         }
@@ -142,6 +139,7 @@ fn parse_replace_count(json: &str) -> usize {
         .unwrap_or(0)
 }
 
+/// `hg_save_hwpx` / Kit `hg_save(HWPX)`: the verified recipe, then serialize.
 fn export_hwpx_cleared(core: &mut DocumentCore) -> Result<Vec<u8>, HangyeolError> {
     clear_all_line_segs(core);
     core.export_hwpx_native()
@@ -362,6 +360,9 @@ pub unsafe extern "C" fn hg_replace_text(
     })
 }
 
+/// Freeze `hg_save_hwpx`: same clear-before-save as Kit `hg_save` (HWPX).
+/// Sequence: walk `document_mut` sections/paras/table cell paras →
+/// `line_segs.clear()` → `export_hwpx_native`.
 #[no_mangle]
 pub unsafe extern "C" fn hg_save_hwpx(engine: *mut hg_engine, path: *const c_char) -> HgStatus {
     ffi_status(|| {
@@ -428,6 +429,28 @@ pub extern "C" fn hg_last_error() -> *const c_char {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Read;
+
+    fn hub_a() -> Vec<u8> {
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../fixtures/hub_hwpxlib_SimpleTable.hwpx");
+        std::fs::read(path).expect("hub-A")
+    }
+
+    fn count_linesegarray(hwpx: &[u8]) -> usize {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(hwpx)).unwrap();
+        let mut total = 0usize;
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).unwrap();
+            if !file.name().ends_with(".xml") {
+                continue;
+            }
+            let mut xml = String::new();
+            file.read_to_string(&mut xml).unwrap();
+            total += xml.matches("hp:linesegarray").count();
+        }
+        total
+    }
 
     #[test]
     fn unknown_format_is_corrupt_not_unsupported() {
@@ -440,5 +463,46 @@ mod tests {
         assert_eq!(HangyeolError::Encrypted.status(), HgStatus::Password);
         assert_eq!(HangyeolError::SaveRejected.status(), HgStatus::Unsupported);
         assert_eq!(HangyeolError::Corrupt.status(), HgStatus::Corrupt);
+    }
+
+    /// Exact verified recipe on DocumentCore (not ZIP/XML edit):
+    /// replace_all_native → document_mut sections/paras/table cell paras
+    /// `line_segs.clear()` → export_hwpx_native.
+    #[test]
+    fn document_core_clear_before_save_recipe() {
+        let bytes = hub_a();
+        assert!(count_linesegarray(&bytes) > 0);
+
+        let mut core = DocumentCore::from_bytes(&bytes).expect("open hub-A");
+        core.replace_all_native("1", "HGPOC99", true)
+            .expect("replace_all_native");
+
+        {
+            let document = core.document_mut();
+            for section in &mut document.sections {
+                for para in &mut section.paragraphs {
+                    para.line_segs.clear();
+                    for control in &mut para.controls {
+                        if let Control::Table(table) = control {
+                            for cell in &mut table.cells {
+                                for cell_para in &mut cell.paragraphs {
+                                    cell_para.line_segs.clear();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let exported = core.export_hwpx_native().expect("export_hwpx_native");
+        assert_eq!(count_linesegarray(&exported), 0, "hp:linesegarray must be 0");
+
+        let reopened = DocumentCore::from_bytes(&exported).expect("reopen");
+        let text = collect_plain_text(reopened.document());
+        assert!(
+            text.contains("HGPOC99"),
+            "replacement token must survive export, got {text:?}"
+        );
     }
 }
