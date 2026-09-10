@@ -54,8 +54,14 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
         return (engine as? any HangyeolLiveSession)?.isOpen == true
     }
 
+    /// Shared live-edit gate: open Real session only (Mock / closed → false).
+    var canEdit: Bool { canReplace }
+
     /// Real session with an open `hg_engine*` (table cell list/edit).
-    var canEditCells: Bool { canReplace }
+    var canEditCells: Bool { canEdit }
+
+    /// Real session with an open `hg_engine*` (paragraph `insertText` / `deleteRange`).
+    var canEditParagraphs: Bool { canEdit }
 
     func open(data: Data, type: DocumentFileType) throws -> DocumentModel {
         do {
@@ -128,6 +134,24 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
         try requireOpenLiveSessionForCells().setCellText(table: table, row: row, col: col, text: text)
     }
 
+    func insertText(section: UInt32, paragraph: UInt32, charOffset: UInt32, text: String) throws {
+        try requireOpenLiveSessionForParagraphs().insertText(
+            section: section,
+            paragraph: paragraph,
+            charOffset: charOffset,
+            text: text
+        )
+    }
+
+    func deleteRange(section: UInt32, paragraph: UInt32, charOffset: UInt32, count: UInt32) throws {
+        try requireOpenLiveSessionForParagraphs().deleteRange(
+            section: section,
+            paragraph: paragraph,
+            charOffset: charOffset,
+            count: count
+        )
+    }
+
     func displayModel(type: DocumentFileType, title: String) throws -> DocumentModel {
         guard let session = liveSession, session.isOpen else {
             throw HangyeolError.notYetImplemented(String(
@@ -160,10 +184,20 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
     }
 
     private func requireOpenLiveSessionForCells() throws -> any HangyeolLiveSession {
-        guard let session = liveSession, session.isOpen else {
+        guard canEdit, let session = liveSession, session.isOpen else {
             throw HangyeolError.notYetImplemented(String(
                 localized: "error.engine.cellMock",
                 defaultValue: "표 셀 편집 (Mock)"
+            ))
+        }
+        return session
+    }
+
+    private func requireOpenLiveSessionForParagraphs() throws -> any HangyeolLiveSession {
+        guard canEdit, let session = liveSession, session.isOpen else {
+            throw HangyeolError.notYetImplemented(String(
+                localized: "error.engine.paragraphMock",
+                defaultValue: "문단 편집 (Mock)"
             ))
         }
         return session

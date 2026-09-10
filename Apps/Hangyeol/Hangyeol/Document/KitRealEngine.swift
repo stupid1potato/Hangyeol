@@ -88,6 +88,34 @@ final class KitRealEngine: HangyeolLiveSession, @unchecked Sendable {
         }
     }
 
+    /// Optional freeze `hg_insert_text` at (`section`, `paragraph`, `charOffset`).
+    func insertText(section: UInt32, paragraph: UInt32, charOffset: UInt32, text: String) throws {
+        do {
+            try kit.insertText(
+                section: section,
+                paragraph: paragraph,
+                charOffset: charOffset,
+                text: text
+            )
+        } catch {
+            throw Self.mapError(error)
+        }
+    }
+
+    /// Optional freeze `hg_delete_range` of `count` characters at the same index.
+    func deleteRange(section: UInt32, paragraph: UInt32, charOffset: UInt32, count: UInt32) throws {
+        do {
+            try kit.deleteRange(
+                section: section,
+                paragraph: paragraph,
+                charOffset: charOffset,
+                count: count
+            )
+        } catch {
+            throw Self.mapError(error)
+        }
+    }
+
     /// Kit concatenates body + table-cell paragraphs with `\n`.
     static func documentModel(
         fromPlainText text: String,
