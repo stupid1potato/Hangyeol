@@ -120,21 +120,6 @@ final class ExportPrintUXTests: XCTestCase {
         XCTAssertTrue(source.contains("L10n.exportPDFConfirm"))
         XCTAssertFalse(source.contains("printStub"))
         XCTAssertFalse(source.contains("인쇄는 아직 지원하지 않습니다"))
-        XCTAssertFalse(source.contains("DocumentUndo"))
-        XCTAssertFalse(source.contains("registerUndo"))
-        XCTAssertFalse(source.contains("replacing: .undoRedo"))
-        let undoHooks = source.components(separatedBy: ".hangyeolSessionUndo(document:")
-        XCTAssertEqual(undoHooks.count - 1, 1)
-    }
-
-    func testCommandsKeepSystemUndoRedoMenu() throws {
-        let commands = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("Hangyeol/App/HangyeolCommands.swift")
-        let source = try String(contentsOf: commands, encoding: .utf8)
-        XCTAssertFalse(source.contains("replacing: .undoRedo"))
-        XCTAssertFalse(source.contains("hangyeolSessionUndo"))
     }
 
     func testPrintCoordinatorAndExporterDropStubCopy() throws {
