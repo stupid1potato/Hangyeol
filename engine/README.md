@@ -22,12 +22,16 @@ This header is a **superset** of HangyeolKit
 (Kit `hg_open` / `hg_save` / `hg_free_buffer` / `hg_close`) plus kickoff freeze
 edit symbols (`hg_plain_text` / `hg_replace_text` / `hg_save_hwpx` /
 `hg_insert_text` / `hg_delete_range` / `hg_list_tables` / `hg_set_cell_text` /
-`hg_last_error`). Same names — not a third scheme. `hg_insert_text` /
+`hg_list_images` / `hg_last_error`). Same names — not a third scheme. `hg_insert_text` /
 `hg_delete_range` are product gates (known para/offset → `hg_plain_text` →
 `hg_save_hwpx` clear-before-save → 0 `hp:linesegarray` → reopen).
 
 `hg_list_tables` / `hg_set_cell_text` walk DocumentCore IR only. Kit maps
 `hg_table_info.index` + `rows`/`cols` onto TableBlock cell addressing.
+
+`hg_list_images` walks `Control::Picture` (body, then nested cell pictures) and
+returns index + size/format meta (`hg_image_info`). Hub-B gate. Not a BinData
+extract or keep-on-save API ([image-meta.md](../docs/engine/image-meta.md)).
 
 | Freeze code | Kit `hg_status` |
 |-------------|-----------------|
@@ -65,6 +69,7 @@ cargo test --manifest-path engine/Cargo.toml
 | Repo generate path (gitignored) | `engine/testdata/out/SimpleTable-cleared-replaced.hwpx` |
 | Insert product gate (gitignored) | `engine/testdata/out/SimpleTable-inserted.hwpx` |
 | Delete product gate (gitignored) | `engine/testdata/out/SimpleTable-deleted.hwpx` |
+| Hub-B image measurement (gitignored) | `engine/testdata/out/SimplePicture-cleared.hwpx` |
 
 Regenerate without the full suite:
 
@@ -92,7 +97,7 @@ engine/
   src/lib.rs          # FFI + DocumentCore wrapper
   src/error.rs        # freeze ↔ Kit mapping
   include/hangyeol_engine.h
-  tests/gates.rs      # hub-A replace/insert/delete+clear, set-cell, F14, F16
+  tests/gates.rs      # hub-A replace/insert/delete/table+clear, hub-B image list, F14, F16
   testdata/out/       # gitignored generated HWPX
   scripts/copy-staticlib-to-release.sh  # deps → release .a (macOS XCFramework)
 ```

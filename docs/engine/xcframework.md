@@ -87,7 +87,7 @@ lipo -info engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a
 nm -gU engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a | grep ' _hg_'
 # 기대: hg_open hg_save hg_save_hwpx hg_plain_text hg_replace_text
 #       hg_insert_text hg_delete_range hg_list_tables hg_set_cell_text
-#       hg_close hg_free_buffer hg_last_error
+#       hg_list_images hg_close hg_free_buffer hg_last_error
 ```
 
 `.dylib`를 XCFramework에 넣을 경우 id를 `@rpath`로 맞춘다:
@@ -125,7 +125,7 @@ XCFramework 산출 (커밋하지 않음): `engine/target/xcframework/HangyeolEng
 nm -gU engine/target/aarch64-apple-darwin/release/libhangyeol_engine.a | grep ' _hg_'
 # 확인됨: hg_open hg_save hg_save_hwpx hg_plain_text hg_replace_text
 #         hg_insert_text hg_delete_range hg_list_tables hg_set_cell_text
-#         hg_close hg_free_buffer hg_last_error
+#         hg_list_images hg_close hg_free_buffer hg_last_error
 ```
 
 ## XCFramework 생성

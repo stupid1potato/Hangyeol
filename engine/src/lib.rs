@@ -4,9 +4,9 @@
 //! renderer / layout / WASM UI exports. Save always clears `line_segs`
 //! (verified Hangyeol recipe) before `export_hwpx_native`.
 //!
-//! Future (not this crate revision): an image-meta *list* API could walk
-//! `Control::Picture` in document order and return `href` / `img_dim` only.
-//! No BinData extract, no storage experiments. Likely fixture: hub-B.
+//! Image-meta *list* (`hg_list_images`) walks `Control::Picture` in document
+//! order and returns index + `href` / `img_dim` / format meta. No BinData
+//! extract API, no keep-on-save product path. Fixture: hub-B.
 
 mod error;
 
@@ -17,6 +17,7 @@ use rhwp::document_core::DocumentCore;
 use rhwp::error::HwpError;
 use rhwp::model::control::Control;
 use rhwp::model::document::Document;
+use rhwp::model::image::Picture;
 use rhwp::model::paragraph::Paragraph;
 use rhwp::model::table::{Cell, Table};
 use rhwp::parser::{detect_format, FileFormat};
@@ -37,6 +38,63 @@ pub struct HgTableInfo {
     pub control: u32,
     pub rows: u32,
     pub cols: u32,
+}
+
+/// C `hg_image_info` format / href buffer sizes (must match the header).
+pub const HG_IMAGE_FORMAT_LEN: usize = 16;
+pub const HG_IMAGE_HREF_LEN: usize = 128;
+
+/// C `hg_image_info`. Kit uses `index` + size/format meta to address pictures.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HgImageInfo {
+    pub index: u32,
+    pub section: u32,
+    pub paragraph: u32,
+    pub control: u32,
+    pub width: u32,
+    pub height: u32,
+    pub byte_len: u32,
+    pub bin_data_id: u32,
+    pub format: [u8; HG_IMAGE_FORMAT_LEN],
+    pub href: [u8; HG_IMAGE_HREF_LEN],
+}
+
+impl HgImageInfo {
+    pub fn zeroed() -> Self {
+        Self {
+            index: 0,
+            section: 0,
+            paragraph: 0,
+            control: 0,
+            width: 0,
+            height: 0,
+            byte_len: 0,
+            bin_data_id: 0,
+            format: [0; HG_IMAGE_FORMAT_LEN],
+            href: [0; HG_IMAGE_HREF_LEN],
+        }
+    }
+
+    pub fn format_str(&self) -> &str {
+        c_fixed_str(&self.format)
+    }
+
+    pub fn href_str(&self) -> &str {
+        c_fixed_str(&self.href)
+    }
+}
+
+fn c_fixed_copy(dst: &mut [u8], src: &str) {
+    dst.fill(0);
+    let bytes = src.as_bytes();
+    let n = bytes.len().min(dst.len().saturating_sub(1));
+    dst[..n].copy_from_slice(&bytes[..n]);
+}
+
+fn c_fixed_str(buf: &[u8]) -> &str {
+    let end = buf.iter().position(|&b| b == 0).unwrap_or(buf.len());
+    std::str::from_utf8(&buf[..end]).unwrap_or("")
 }
 
 /// Opaque session pointer type for the C ABI (`typedef struct hg_engine hg_engine`).
@@ -194,6 +252,147 @@ fn collect_tables_in_para(
             }
         }
     }
+}
+
+/// Document-order pictures (body, then nested cell pictures). `index` is the
+/// Kit addressing id for `hg_list_images`.
+pub fn list_images(core: &DocumentCore) -> Vec<HgImageInfo> {
+    collect_images(core.document())
+}
+
+fn collect_images(document: &Document) -> Vec<HgImageInfo> {
+    let mut out = Vec::new();
+    for (sec_i, section) in document.sections.iter().enumerate() {
+        for (para_i, para) in section.paragraphs.iter().enumerate() {
+            collect_images_in_para(document, para, sec_i, para_i, &mut out);
+        }
+    }
+    for (i, info) in out.iter_mut().enumerate() {
+        info.index = i as u32;
+    }
+    out
+}
+
+fn collect_images_in_para(
+    document: &Document,
+    para: &Paragraph,
+    section: usize,
+    paragraph: usize,
+    out: &mut Vec<HgImageInfo>,
+) {
+    for (ctrl_i, control) in para.controls.iter().enumerate() {
+        match control {
+            Control::Picture(pic) => {
+                out.push(image_info_from_picture(
+                    document, pic, section, paragraph, ctrl_i,
+                ));
+            }
+            Control::Table(table) => {
+                for cell in &table.cells {
+                    for cell_para in &cell.paragraphs {
+                        collect_images_in_para(document, cell_para, section, paragraph, out);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn image_info_from_picture(
+    document: &Document,
+    pic: &Picture,
+    section: usize,
+    paragraph: usize,
+    control: usize,
+) -> HgImageInfo {
+    let (width, height) = if pic.img_dim.0 > 0 && pic.img_dim.1 > 0 {
+        pic.img_dim
+    } else {
+        (pic.common.width, pic.common.height)
+    };
+    let (byte_len, format, href) = image_bin_meta(document, pic);
+    let mut info = HgImageInfo::zeroed();
+    info.section = section as u32;
+    info.paragraph = paragraph as u32;
+    info.control = control as u32;
+    info.width = width;
+    info.height = height;
+    info.byte_len = byte_len;
+    info.bin_data_id = u32::from(pic.image_attr.bin_data_id);
+    c_fixed_copy(&mut info.format, &format);
+    c_fixed_copy(&mut info.href, &href);
+    info
+}
+
+fn normalize_format(raw: &str) -> String {
+    let s = raw.trim().trim_start_matches('.').to_ascii_lowercase();
+    if s.is_empty() {
+        return String::new();
+    }
+    s.chars().take(HG_IMAGE_FORMAT_LEN - 1).collect()
+}
+
+/// Format / byte length / href from Picture + BinData IR metadata only.
+/// Does not copy image bytes out as a product extract API.
+fn image_bin_meta(document: &Document, pic: &Picture) -> (u32, String, String) {
+    let id = pic.image_attr.bin_data_id;
+    let mut byte_len = 0u32;
+    let mut ext = String::new();
+    let mut href = pic.href.as_deref().unwrap_or("").trim().to_string();
+
+    if let Some(content) = document.bin_data_content.iter().find(|c| c.id == id) {
+        byte_len = content.data.len().min(u32::MAX as usize) as u32;
+        if !content.extension.trim().is_empty() {
+            ext = content.extension.clone();
+        }
+    } else if let Some(i) = id.checked_sub(1) {
+        if let Some(content) = document.bin_data_content.get(i as usize) {
+            byte_len = content.data.len().min(u32::MAX as usize) as u32;
+            if ext.is_empty() && !content.extension.trim().is_empty() {
+                ext = content.extension.clone();
+            }
+        }
+    }
+
+    if let Some(entry) = document
+        .doc_info
+        .bin_data_list
+        .iter()
+        .find(|b| b.storage_id == id)
+    {
+        if ext.is_empty() {
+            if let Some(e) = &entry.extension {
+                ext = e.clone();
+            }
+        }
+        if href.is_empty() {
+            if let Some(rel) = &entry.rel_path {
+                href = rel.clone();
+            } else if let Some(abs) = &entry.abs_path {
+                href = abs.clone();
+            }
+        }
+    }
+
+    let format = normalize_format(&ext);
+    if href.is_empty() && id > 0 {
+        href = if format.is_empty() {
+            format!("image{id}")
+        } else {
+            format!("BinData/image{id}.{format}")
+        };
+    } else if format.is_empty() {
+        if let Some(found) = Path::new(&href)
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(normalize_format)
+        {
+            return (byte_len, found, href);
+        }
+    }
+
+    (byte_len, format, href)
 }
 
 fn cell_mut(table: &mut Table, row: u32, col: u32) -> Result<&mut Cell, HangyeolError> {
@@ -664,6 +863,38 @@ pub unsafe extern "C" fn hg_list_tables(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn hg_list_images(
+    engine: *mut hg_engine,
+    out_images: *mut HgImageInfo,
+    capacity: usize,
+    out_count: *mut usize,
+) -> HgStatus {
+    ffi_status(|| {
+        if out_count.is_null() {
+            return Err(HangyeolError::Corrupt);
+        }
+        let engine = take_engine(engine)?;
+        let images = collect_images(engine.core.document());
+        unsafe {
+            *out_count = images.len();
+        }
+        if capacity == 0 {
+            return Ok(ok());
+        }
+        if out_images.is_null() {
+            return Err(HangyeolError::Corrupt);
+        }
+        let n = capacity.min(images.len());
+        for (i, info) in images.iter().take(n).enumerate() {
+            unsafe {
+                *out_images.add(i) = *info;
+            }
+        }
+        Ok(ok())
+    })
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn hg_set_cell_text(
     engine: *mut hg_engine,
     table: u32,
@@ -693,6 +924,12 @@ mod tests {
         let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../fixtures/hub_hwpxlib_SimpleTable.hwpx");
         std::fs::read(path).expect("hub-A")
+    }
+
+    fn hub_b() -> Vec<u8> {
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../fixtures/hub_hwpxlib_SimplePicture.hwpx");
+        std::fs::read(path).expect("hub-B")
     }
 
     fn count_linesegarray(hwpx: &[u8]) -> usize {
@@ -816,6 +1053,29 @@ mod tests {
         let reopened = DocumentCore::from_bytes(&exported).expect("reopen");
         let again = collect_plain_text(reopened.document());
         assert!(again.contains("HGSET99"), "got {again:?}");
+    }
+
+    #[test]
+    fn list_images_on_hub_b() {
+        let bytes = hub_b();
+        let core = DocumentCore::from_bytes(&bytes).expect("open hub-B");
+        let images = list_images(&core);
+        assert!(
+            !images.is_empty(),
+            "SimplePicture / hub-B must list ≥1 picture"
+        );
+        let img = &images[0];
+        assert_eq!(img.index, 0);
+        assert!(img.width > 0 && img.height > 0, "size meta {img:?}");
+        let fmt = img.format_str();
+        assert!(
+            matches!(fmt, "jpg" | "jpeg" | "png" | "gif" | "bmp"),
+            "format meta {fmt:?}"
+        );
+        assert!(
+            img.bin_data_id > 0 || !img.href_str().is_empty(),
+            "Kit addressing needs bin_data_id or href, got {img:?}"
+        );
     }
 
     /// Product gate: insert at known (section, para, offset) survives
