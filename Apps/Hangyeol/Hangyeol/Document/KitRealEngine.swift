@@ -116,6 +116,25 @@ final class KitRealEngine: HangyeolLiveSession, @unchecked Sendable {
         }
     }
 
+    /// HWPX bytes of the live IR. `hg_save` clears `line_segs` (same as product save).
+    /// Called only when a window `UndoManager` is attached, as a fallback when
+    /// `textInRange` / `cellText` are unavailable (no peek FFI).
+    func captureUndoState() throws -> Data {
+        do {
+            return try kit.save(HangyeolKit.DocumentModel(fileType: .hwpx), as: .hwpx)
+        } catch {
+            throw Self.mapError(error)
+        }
+    }
+
+    func restoreUndoState(_ data: Data) throws {
+        do {
+            _ = try kit.open(data: data, type: .hwpx)
+        } catch {
+            throw Self.mapError(error)
+        }
+    }
+
     /// Kit concatenates body + table-cell paragraphs with `\n`.
     static func documentModel(
         fromPlainText text: String,

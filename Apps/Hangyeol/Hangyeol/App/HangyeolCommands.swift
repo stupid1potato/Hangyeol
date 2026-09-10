@@ -86,6 +86,8 @@ struct HangyeolCommands: Commands {
         }
 
         CommandGroup(after: .pasteboard) {
+            // Edit → Undo/Redo stays the system menu (window UndoManager).
+            // DocumentSession registers live session edits automatically.
             Button(L10n.find) {
                 actions?.toggleFindReplace()
             }

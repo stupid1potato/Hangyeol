@@ -17,6 +17,56 @@ protocol HangyeolLiveSession: HangyeolEngine {
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws
     func insertText(section: UInt32, paragraph: UInt32, charOffset: UInt32, text: String) throws
     func deleteRange(section: UInt32, paragraph: UInt32, charOffset: UInt32, count: UInt32) throws
+    /// Current characters at an engine index. Used to invert `deleteRange`.
+    func textInRange(section: UInt32, paragraph: UInt32, charOffset: UInt32, count: UInt32) throws -> String
+    /// Current cell plain text. Used to invert `setCellText`.
+    func cellText(table: UInt32, row: UInt32, col: UInt32) throws -> String
+    /// IR bytes for undo when an inverse command cannot be captured (`replaceText`, Real fallback).
+    func captureUndoState() throws -> Data
+    func restoreUndoState(_ data: Data) throws
+}
+
+extension HangyeolLiveSession {
+    func textInRange(
+        section: UInt32,
+        paragraph: UInt32,
+        charOffset: UInt32,
+        count: UInt32
+    ) throws -> String {
+        _ = section
+        _ = paragraph
+        _ = charOffset
+        _ = count
+        throw HangyeolError.notYetImplemented(String(
+            localized: "error.engine.undoPeek",
+            defaultValue: "실행 취소 미리보기"
+        ))
+    }
+
+    func cellText(table: UInt32, row: UInt32, col: UInt32) throws -> String {
+        _ = table
+        _ = row
+        _ = col
+        throw HangyeolError.notYetImplemented(String(
+            localized: "error.engine.undoPeek",
+            defaultValue: "실행 취소 미리보기"
+        ))
+    }
+
+    func captureUndoState() throws -> Data {
+        throw HangyeolError.notYetImplemented(String(
+            localized: "error.engine.undoSnapshot",
+            defaultValue: "실행 취소 스냅샷"
+        ))
+    }
+
+    func restoreUndoState(_ data: Data) throws {
+        _ = data
+        throw HangyeolError.notYetImplemented(String(
+            localized: "error.engine.undoSnapshot",
+            defaultValue: "실행 취소 스냅샷"
+        ))
+    }
 }
 
 enum EngineClient {

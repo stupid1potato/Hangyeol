@@ -217,6 +217,7 @@ struct DocumentWindow: View {
             }
             reloadEngineTables()
         }
+        .hangyeolSessionUndo(document: $document)
         .onChange(of: fileURL) { _, url in
             if let url {
                 recents.noteOpened(url)

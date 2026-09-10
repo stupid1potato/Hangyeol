@@ -10,20 +10,47 @@ import Foundation
 ///
 /// Frontend: observe `lastSaveError` / `lastOpenError` (or catch throws) to
 /// present sheets. This type does not present UI.
+///
+/// Session edits (`replaceText` / `setCellText` / `insertText` / `deleteRange`)
+/// register inverses on the window `UndoManager` after a **successful** live
+/// mutation. Attach it with `attachUndoManager` (DocumentGroup environment /
+/// Edit → Undo/Redo). Mock throws `notYetImplemented` and never registers.
 final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable {
     let id: UUID
 
     private let lock = NSLock()
     private var engine: any HangyeolEngine
+    private weak var boundUndoManager: UndoManager?
+    private var undoBaselineDelta = 0
 
     /// Last mapped save failure. Cleared on the next successful save.
     @Published private(set) var lastSaveError: HangyeolError?
     /// Last mapped open failure. Cleared on the next successful open.
     @Published private(set) var lastOpenError: HangyeolError?
+    /// Bumped after UndoManager undo/redo so the FileDocument display model can refresh.
+    @Published private(set) var undoGeneration: UInt64 = 0
 
     init(engine: any HangyeolEngine = EngineClient.makeEngine()) {
         self.id = UUID()
         self.engine = engine
+    }
+
+    deinit {
+        boundUndoManager?.removeAllActions(withTarget: self)
+    }
+
+    /// Window / FileDocument `UndoManager` (`@Environment(\.undoManager)`).
+    /// Standard Edit → Undo/Redo talks to this object; session APIs register automatically.
+    var undoManager: UndoManager? { boundUndoManager }
+
+    /// True when live edits have been registered and not fully undone (relative to open/save).
+    var hasUndoableEdits: Bool { undoBaselineDelta != 0 }
+
+    func attachUndoManager(_ undoManager: UndoManager?) {
+        if boundUndoManager !== undoManager {
+            boundUndoManager?.removeAllActions(withTarget: self)
+            boundUndoManager = undoManager
+        }
     }
 
     var isUsingMock: Bool {
@@ -66,7 +93,7 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
     func open(data: Data, type: DocumentFileType) throws -> DocumentModel {
         do {
             lastOpenError = nil
-            return try withEngine { engine in
+            let model = try withEngine { engine in
                 do {
                     return try engine.open(data: data, type: type)
                 } catch {
@@ -80,6 +107,8 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
                     return try mock.open(data: data, type: type)
                 }
             }
+            clearUndoHistory()
+            return model
         } catch let error as HangyeolError {
             lastOpenError = error
             throw error
@@ -100,15 +129,21 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
         }
         do {
             lastSaveError = nil
-            return try withEngine { engine in
+            let (data, droppedLiveSession) = try withEngine { engine -> (Data, Bool) in
                 if let live = engine as? any HangyeolLiveSession, !live.isOpen {
                     // Untitled Real has no DocumentCore IR yet; Mock JSON so
                     // Save As .hwpx still round-trips. Not a re-encode of live IR.
                     self.engine = MockEngine()
-                    return try self.engine.save(model, as: type)
+                    return (try self.engine.save(model, as: type), true)
                 }
-                return try engine.save(model, as: type)
+                return (try engine.save(model, as: type), false)
             }
+            if droppedLiveSession {
+                clearUndoHistory()
+            } else {
+                undoBaselineDelta = 0
+            }
+            return data
         } catch {
             let mapped = HangyeolError.mapSaveFailure(error)
             lastSaveError = mapped
@@ -123,7 +158,15 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
                 defaultValue: "찾기/바꾸기 (Mock)"
             ))
         }
-        return try session.replaceText(find: find, replace: replace)
+        let snapshot = boundUndoManager == nil ? nil : try? session.captureUndoState()
+        let count = try session.replaceText(find: find, replace: replace)
+        if count > 0, let snapshot {
+            registerUndoPair(
+                undo: .restoreSnapshot(snapshot),
+                redo: .replaceText(find: find, replace: replace)
+            )
+        }
+        return count
     }
 
     func listTables() throws -> [TableInfo] {
@@ -131,7 +174,23 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
     }
 
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
-        try requireOpenLiveSessionForCells().setCellText(table: table, row: row, col: col, text: text)
+        let session = try requireOpenLiveSessionForCells()
+        let previous = boundUndoManager == nil ? nil : try? session.cellText(table: table, row: row, col: col)
+        let snapshot = previous == nil && boundUndoManager != nil
+            ? try? session.captureUndoState()
+            : nil
+        try session.setCellText(table: table, row: row, col: col, text: text)
+        if let previous {
+            registerUndoPair(
+                undo: .setCellText(table: table, row: row, col: col, text: previous),
+                redo: .setCellText(table: table, row: row, col: col, text: text)
+            )
+        } else if let snapshot {
+            registerUndoPair(
+                undo: .restoreSnapshot(snapshot),
+                redo: .setCellText(table: table, row: row, col: col, text: text)
+            )
+        }
     }
 
     func insertText(section: UInt32, paragraph: UInt32, charOffset: UInt32, text: String) throws {
@@ -141,15 +200,58 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
             charOffset: charOffset,
             text: text
         )
+        let count = UInt32(clamping: text.unicodeScalars.count)
+        registerUndoPair(
+            undo: .deleteRange(section: section, paragraph: paragraph, charOffset: charOffset, count: count),
+            redo: .insertText(section: section, paragraph: paragraph, charOffset: charOffset, text: text)
+        )
     }
 
     func deleteRange(section: UInt32, paragraph: UInt32, charOffset: UInt32, count: UInt32) throws {
-        try requireOpenLiveSessionForParagraphs().deleteRange(
+        let session = try requireOpenLiveSessionForParagraphs()
+        let deleted = boundUndoManager == nil
+            ? nil
+            : try? session.textInRange(
+                section: section,
+                paragraph: paragraph,
+                charOffset: charOffset,
+                count: count
+            )
+        let snapshot = deleted == nil && boundUndoManager != nil
+            ? try? session.captureUndoState()
+            : nil
+        try session.deleteRange(
             section: section,
             paragraph: paragraph,
             charOffset: charOffset,
             count: count
         )
+        if let deleted {
+            registerUndoPair(
+                undo: .insertText(
+                    section: section,
+                    paragraph: paragraph,
+                    charOffset: charOffset,
+                    text: deleted
+                ),
+                redo: .deleteRange(
+                    section: section,
+                    paragraph: paragraph,
+                    charOffset: charOffset,
+                    count: count
+                )
+            )
+        } else if let snapshot {
+            registerUndoPair(
+                undo: .restoreSnapshot(snapshot),
+                redo: .deleteRange(
+                    section: section,
+                    paragraph: paragraph,
+                    charOffset: charOffset,
+                    count: count
+                )
+            )
+        }
     }
 
     func displayModel(type: DocumentFileType, title: String) throws -> DocumentModel {
@@ -181,6 +283,74 @@ final class DocumentSession: ObservableObject, Identifiable, @unchecked Sendable
             lastSaveError = mapped
             throw mapped
         }
+    }
+
+    private enum SessionUndoAction {
+        case insertText(section: UInt32, paragraph: UInt32, charOffset: UInt32, text: String)
+        case deleteRange(section: UInt32, paragraph: UInt32, charOffset: UInt32, count: UInt32)
+        case setCellText(table: UInt32, row: UInt32, col: UInt32, text: String)
+        case replaceText(find: String, replace: String)
+        case restoreSnapshot(Data)
+    }
+
+    private func apply(_ action: SessionUndoAction, on live: any HangyeolLiveSession) throws {
+        switch action {
+        case .insertText(let section, let paragraph, let charOffset, let text):
+            try live.insertText(
+                section: section,
+                paragraph: paragraph,
+                charOffset: charOffset,
+                text: text
+            )
+        case .deleteRange(let section, let paragraph, let charOffset, let count):
+            try live.deleteRange(
+                section: section,
+                paragraph: paragraph,
+                charOffset: charOffset,
+                count: count
+            )
+        case .setCellText(let table, let row, let col, let text):
+            try live.setCellText(table: table, row: row, col: col, text: text)
+        case .replaceText(let find, let replace):
+            _ = try live.replaceText(find: find, replace: replace)
+        case .restoreSnapshot(let data):
+            try live.restoreUndoState(data)
+        }
+    }
+
+    private func registerUndoPair(undo: SessionUndoAction, redo: SessionUndoAction) {
+        guard let undoManager = boundUndoManager else { return }
+        undoManager.registerUndo(withTarget: self) { target in
+            target.performUndoPair(undo: undo, redo: redo)
+        }
+        if !undoManager.isUndoing && !undoManager.isRedoing {
+            undoBaselineDelta += 1
+            undoManager.setActionName(String(
+                localized: "undo.sessionEdit",
+                defaultValue: "편집"
+            ))
+        }
+    }
+
+    private func performUndoPair(undo: SessionUndoAction, redo: SessionUndoAction) {
+        guard let live = liveSession, live.isOpen else { return }
+        do {
+            try apply(undo, on: live)
+        } catch {
+            return
+        }
+        if boundUndoManager?.isUndoing == true {
+            undoBaselineDelta -= 1
+        } else {
+            undoBaselineDelta += 1
+        }
+        registerUndoPair(undo: redo, redo: undo)
+        undoGeneration += 1
+    }
+
+    private func clearUndoHistory() {
+        boundUndoManager?.removeAllActions(withTarget: self)
+        undoBaselineDelta = 0
     }
 
     private func requireOpenLiveSessionForCells() throws -> any HangyeolLiveSession {
