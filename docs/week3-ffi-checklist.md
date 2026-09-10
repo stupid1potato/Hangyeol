@@ -14,7 +14,7 @@ HangyeolKit tracks the engine C ABI **without** linking the app or the Rust cdyl
 
 ## Next (blocked on XCFramework — do not skip ahead)
 
-- [ ] Wait for / vendor an **XCFramework** built from `engine/` (rustc **≥ 1.88**; this rhwp SHA’s cargo graph may need ≥ 1.89; CI uses 1.93.1).
+- [ ] Wait for / vendor an **XCFramework** built from `engine/` — procedure: [`docs/engine/xcframework.md`](engine/xcframework.md) (rustc **≥ 1.89** product pin; CI 1.93.1).
 - [ ] Implement HangyeolKit **`RealEngine`** over that XCFramework (live `hg_*` calls).
 - [ ] **Then** link HangyeolKit from `Apps/Hangyeol` (xcodeproj product).
 - [ ] Replace `MockEngine` with `RealEngine` in the app only after the steps above.

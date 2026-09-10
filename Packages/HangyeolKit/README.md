@@ -4,7 +4,7 @@ Header + Swift stub + comments only. **No XCFramework yet.** The thin `hg_*` cdy
 
 `Apps/Hangyeol` must **not** import this package, must **not** add `RealEngine`, and must **not** call `hg_*`. The live engine stays `MockEngine`. Do not add this product to the Xcode project.
 
-Week-3 order: **header sync (this package) → wait XCFramework → RealEngine → app link.** See [week-3 FFI checklist](../../docs/week3-ffi-checklist.md).
+Week-3 order: **header sync (this package) → wait XCFramework → RealEngine → app link.** See [week-3 FFI checklist](../../docs/week3-ffi-checklist.md). XCFramework procedure (not linked yet): [`docs/engine/xcframework.md`](../../docs/engine/xcframework.md) (rustc **≥ 1.89**).
 
 ## Engine (팀장3 확정)
 
