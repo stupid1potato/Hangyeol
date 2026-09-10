@@ -28,6 +28,7 @@
           },
           "format": {
             "type": "string",
+            "description": "Byte format. Wrong-extension fixtures keep the true format (e.g. hwpx) and record the role in notes.",
             "enum": ["hwp5", "hwpx", "corrupt", "encrypted"]
           },
           "expects": {
@@ -39,6 +40,10 @@
               "encrypted": { "type": "boolean" },
               "errorCode": { "type": "string" }
             }
+          },
+          "notes": {
+            "type": "string",
+            "description": "Role or derivation note (wrong_ext, prettyprint-bad, truncate, F13 deferral, …)"
           },
           "license": {
             "type": "string",
