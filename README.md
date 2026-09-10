@@ -1,2 +1,30 @@
-# Hangyeol
-한결(Hangyeol) — macOS 한글(.hwp/.hwpx) 문서 앱 모노레포
+# Hangyeol (한결)
+
+macOS 14+ 네이티브 앱. `.hwp` / `.hwpx` 열기 · 본문·표 수정 · HWPX 저장.
+
+- Bundle ID: `app.hangyeol.mac`
+- 엔진: 공개 엔진 1개 (1주 PoC: openhwp, 백업: rhwp)
+- 앱 런타임에 Python 금지
+
+## 모노레포 구조
+
+```
+Apps/Hangyeol/         # macOS SwiftUI+AppKit 문서 앱 (개발자2)
+Packages/HangyeolKit/  # Swift FFI 래퍼
+engine/                # Rust + C ABI (개발자1)
+fixtures/              # 샘플 코퍼스 · 왕복 기대값
+docs/                  # 한계 · API 동결 노트
+scripts/               # 회귀 · 추출 CI
+```
+
+## 역할
+
+| 역할 | 담당 |
+|------|------|
+| 팀장 | 범위·일정·엔진·리스크·주간 데모 |
+| 개발자1 | 문서 엔진 |
+| 개발자2 | macOS 앱 |
+
+## 비고
+
+암호화·DRM·HWP 3.x 미지원. 한컴 상표·함초롬 폰트 무단 번들 금지.

@@ -1,0 +1,33 @@
+# Xcode / Swift
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+.swiftpm/
+Packages/HangyeolKit/.build/
+
+# Rust
+engine/target/
+**/*.rs.bk
+
+# OS / editors
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
+
+# Secrets
+*.p12
+*.cer
+AuthKey_*.p8
+.env
+.env.*
+
+# Temp
+*.tmp
+/tmp/
