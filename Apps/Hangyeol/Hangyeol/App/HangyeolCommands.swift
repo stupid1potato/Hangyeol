@@ -4,6 +4,8 @@ import SwiftUI
 struct HangyeolWindowActions {
     var openSample: () -> Void
     var openDocument: () -> Void
+    var openRecent: (RecentDocuments.Item) -> Void
+    var clearRecents: () -> Void
     var toggleFindReplace: () -> Void
     var exportPDF: () -> Void
     var printDocument: () -> Void
@@ -14,56 +16,57 @@ private struct HangyeolWindowActionsKey: FocusedValueKey {
     typealias Value = HangyeolWindowActions
 }
 
+private struct HangyeolRecentsKey: FocusedValueKey {
+    typealias Value = [RecentDocuments.Item]
+}
+
 extension FocusedValues {
     var hangyeolActions: HangyeolWindowActions? {
         get { self[HangyeolWindowActionsKey.self] }
         set { self[HangyeolWindowActionsKey.self] = newValue }
     }
+
+    var hangyeolRecents: [RecentDocuments.Item]? {
+        get { self[HangyeolRecentsKey.self] }
+        set { self[HangyeolRecentsKey.self] = newValue }
+    }
 }
 
 struct HangyeolCommands: Commands {
     @FocusedValue(\.hangyeolActions) private var actions
-    @ObservedObject private var recents = RecentDocuments.shared
+    @FocusedValue(\.hangyeolRecents) private var recents
 
     var body: some Commands {
-        CommandGroup(replacing: .newItem) {
-            Button(L10n.newDocument) {
-                NSDocumentController.shared.newDocument(nil)
-            }
-            .keyboardShortcut("n")
-
-            Button(L10n.open) {
+        // DocumentGroup의 New/Open/Open Recent를 교체하지 않습니다.
+        // replacing: .newItem 은 PlatformDocumentController 초기화 중
+        // createDocumentClassIfNeeded 에서 SIGSEGV를 유발합니다.
+        CommandGroup(after: .newItem) {
+            Button(L10n.openDocument) {
                 if let openDocument = actions?.openDocument {
                     openDocument()
                 } else {
                     FileOpening.presentOpenPanel()
                 }
             }
-            .keyboardShortcut("o")
 
             Menu(L10n.recents) {
-                if recents.items.isEmpty {
-                    Button(L10n.recentsEmpty) {}
-                        .disabled(true)
-                } else {
-                    ForEach(recents.items) { item in
+                if let recents, !recents.isEmpty {
+                    ForEach(recents) { item in
                         Button(item.title) {
-                            do {
-                                try recents.open(item)
-                            } catch {
-                                FileOpening.present(error)
-                            }
+                            actions?.openRecent(item)
                         }
                     }
                     Divider()
                     Button(L10n.clearRecents) {
-                        recents.clear()
+                        actions?.clearRecents()
                     }
+                    .disabled(actions == nil)
+                } else {
+                    Button(L10n.recentsEmpty) {}
+                        .disabled(true)
                 }
             }
-        }
 
-        CommandGroup(after: .newItem) {
             Button(L10n.openSample) {
                 actions?.openSample()
             }

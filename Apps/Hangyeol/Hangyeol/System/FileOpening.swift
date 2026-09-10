@@ -97,6 +97,8 @@ enum FileOpening {
             return
         }
 
+        // DocumentGroup가 만든 컨트롤러가 준비된 뒤에만 호출됩니다.
+        // 새 문서는 NSDocumentController.newDocument 를 쓰지 않습니다.
         NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, error in
             if let error {
                 DispatchQueue.main.async {

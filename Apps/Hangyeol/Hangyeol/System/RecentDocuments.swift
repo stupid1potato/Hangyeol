@@ -18,7 +18,8 @@ final class RecentDocuments: ObservableObject {
     private let maxCount = 12
 
     private init() {
-        refresh()
+        // DocumentGroup의 PlatformDocumentController 초기화 전에
+        // NSDocumentController.shared 를 건드리지 않습니다.
     }
 
     func refresh() {

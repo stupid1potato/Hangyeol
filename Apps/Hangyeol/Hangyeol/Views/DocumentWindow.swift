@@ -110,11 +110,14 @@ struct DocumentWindow: View {
         .focusedSceneValue(\.hangyeolActions, HangyeolWindowActions(
             openSample: loadSample,
             openDocument: presentOpenPanel,
+            openRecent: openRecent,
+            clearRecents: { recents.clear() },
             toggleFindReplace: { showFindReplace.toggle() },
             exportPDF: exportPDF,
             printDocument: { PrintCoordinator.print(document.model) },
             showHelp: { showHelp = true }
         ))
+        .focusedSceneValue(\.hangyeolRecents, recents.items)
         .onAppear {
             FileOpening.install(openDocument: openDocument)
             if let fileURL {
