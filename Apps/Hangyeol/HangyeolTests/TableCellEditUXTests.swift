@@ -127,4 +127,32 @@ final class TableCellEditUXTests: XCTestCase {
         }
         XCTAssertFalse(DocumentModelTableBinding.replaceTable(in: &model, atBlock: 0, with: edited))
     }
+
+    func testViewsDoNotCallDocumentListTablesOrSetCellText() throws {
+        let views = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Hangyeol/Views")
+        let files = try FileManager.default.contentsOfDirectory(
+            at: views,
+            includingPropertiesForKeys: nil
+        ).filter { $0.pathExtension == "swift" }
+        XCTAssertFalse(files.isEmpty)
+
+        for file in files {
+            let source = try String(contentsOf: file, encoding: .utf8)
+            XCTAssertFalse(
+                source.contains("document.listTables("),
+                "\(file.lastPathComponent) calls document.listTables"
+            )
+            XCTAssertFalse(
+                source.contains("document.setCellText("),
+                "\(file.lastPathComponent) calls document.setCellText"
+            )
+            XCTAssertFalse(
+                source.contains(".canEditCells"),
+                "\(file.lastPathComponent) reads canEditCells"
+            )
+        }
+    }
 }

@@ -3,7 +3,8 @@ import SwiftUI
 struct TableBlockView: View {
     @Binding var table: TableBlock
     var editable: Bool = false
-    /// Future session hook `(row, col, text)`. Default is local Binding only.
+    /// Optional `(row, col, text)` hook for a later document.setCellText bind.
+    /// Default is local Binding only (no session call).
     var onCommit: ((Int, Int, String) -> Void)? = nil
 
     private var presentation: TableCellEditPresentation {

@@ -68,8 +68,9 @@ struct DocumentWindow: View {
                     onOpenRecent: openRecent
                 )
             } else {
-                // Sketch: in-memory TableBlock Binding only. Do not call
-                // DocumentSession / HangyeolKit listTables or setCellText here.
+                // Sketch: in-memory TableBlock Binding + onCommit hook only.
+                // Do not call document.listTables / setCellText until #22
+                // merges; a follow-up PR will bind the document API.
                 StructuredTextView(
                     model: $document.model,
                     tablesEditable: true

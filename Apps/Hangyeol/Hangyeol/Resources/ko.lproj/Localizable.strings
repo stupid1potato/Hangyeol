@@ -52,7 +52,7 @@
 "error.engine.replaceMock" = "찾기/바꾸기 (Mock)";
 "error.engine.saveHwpxMock" = "HWPX 엔진 저장 (Mock)";
 "print.stub" = "인쇄는 아직 지원하지 않습니다.";
-"table.edit.sketch" = "표 칸은 이 화면에만 반영됩니다. 엔진 저장은 아직 연결되지 않았습니다.";
+"table.edit.sketch" = "표 칸은 이 화면에만 반영됩니다. 문서 세션 연결은 이후 버전에서 합니다.";
 "table.cell.empty" = "빈 칸";
 "table.cell.headerRole" = "머리글";
 "table.a11y" = "표, %d행 %d열";

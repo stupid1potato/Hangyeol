@@ -3,8 +3,8 @@ import SwiftUI
 
 /// Table cell chrome for the **in-memory** `TableBlock` sketch.
 ///
-/// Not live IR: do not call `DocumentSession` / HangyeolKit `listTables` /
-/// `setCellText` from here. Wire `onCommit` after that session API lands.
+/// Sketch only: do not call `document.listTables` / `setCellText` /
+/// `session.canEditCells`. After #22 merges, a follow-up binds `onCommit`.
 struct TableCellEditPresentation: Equatable {
     var editable: Bool
 

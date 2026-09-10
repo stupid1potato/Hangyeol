@@ -4,7 +4,7 @@ struct StructuredTextView: View {
     @Binding var model: DocumentModel
     /// When true, table cells use the in-memory edit sketch (`TextField` + Binding).
     var tablesEditable: Bool = false
-    /// Per-table `(row, col, text)` hook for a future `DocumentSession.setCellText`.
+    /// Per-table `(row, col, text)` hook. Bind to `document.setCellText` after #22.
     var onTableCellCommit: ((Int, Int, String) -> Void)? = nil
 
     init(

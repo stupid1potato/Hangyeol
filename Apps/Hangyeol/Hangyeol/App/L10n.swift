@@ -86,7 +86,7 @@ enum L10n {
 
     static let tableEditSketchNote = String(
         localized: "table.edit.sketch",
-        defaultValue: "표 칸은 이 화면에만 반영됩니다. 엔진 저장은 아직 연결되지 않았습니다."
+        defaultValue: "표 칸은 이 화면에만 반영됩니다. 문서 세션 연결은 이후 버전에서 합니다."
     )
     static let tableEmptyCell = String(localized: "table.cell.empty", defaultValue: "빈 칸")
     static let tableHeaderRole = String(localized: "table.cell.headerRole", defaultValue: "머리글")
