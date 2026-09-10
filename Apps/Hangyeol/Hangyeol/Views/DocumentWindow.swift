@@ -5,17 +5,35 @@ import UniformTypeIdentifiers
 struct DocumentWindow: View {
     @Binding var document: HangyeolDocument
     var fileURL: URL?
+    /// Preview / tests. Live windows use `document.hasUnsavedEdits`.
+    var isEditedOverride: Bool? = nil
 
     @Environment(\.openDocument) private var openDocument
     @ObservedObject private var recents = RecentDocuments.shared
+    @StateObject private var exportFailure = RetryableFailure()
+    @StateObject private var reopenFailure = RetryableFailure()
     @State private var showFindReplace = false
     @State private var findQuery = ""
     @State private var replaceQuery = ""
     @State private var presentedError: HangyeolError?
-    @State private var saveFailure: HangyeolError?
     @State private var showHelp = false
-    @State private var exportRetry: (() -> Void)?
     @State private var isDropTargeted = false
+    @State private var dismissedSaveErrorID: String?
+
+    private var chrome: DocumentChromeState {
+        DocumentChromeState.make(
+            title: document.model.displayTitle,
+            isEditedOverride: isEditedOverride,
+            hasUnsavedEdits: document.hasUnsavedEdits
+        )
+    }
+
+    private var sessionSaveError: HangyeolError? {
+        SessionSaveFailurePresentation.presentedError(
+            lastSaveError: document.session.lastSaveError,
+            dismissedID: dismissedSaveErrorID
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -57,14 +75,27 @@ struct DocumentWindow: View {
                             .background(.regularMaterial, in: Capsule())
                     }
                     .allowsHitTesting(false)
+                    .accessibilityHidden(true)
             }
         }
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
             FileOpening.handleDrop(providers: providers)
         }
-        .navigationTitle(document.model.displayTitle)
+        .navigationTitle(chrome.title)
+        .hangyeolEditedSubtitle(chrome.navigationSubtitle)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
+                if chrome.isEdited {
+                    Text(L10n.edited)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(.quaternary, in: Capsule())
+                        .accessibilityLabel(L10n.edited)
+                        .accessibilityIdentifier("document-edited-badge")
+                }
+
                 Button {
                     showFindReplace.toggle()
                 } label: {
@@ -90,17 +121,34 @@ struct DocumentWindow: View {
                 presentedError = nil
             }
         }
-        .sheet(item: $saveFailure) { error in
+        .sheet(item: sessionSaveErrorBinding) { error in
             SaveFailureSheet(
                 error: error,
-                onRetry: {
-                    saveFailure = nil
-                    exportRetry?()
-                },
-                onDismiss: {
-                    saveFailure = nil
-                    exportRetry = nil
-                }
+                title: L10n.saveFailureTitle,
+                retryTitle: L10n.retrySave,
+                retryHint: L10n.saveFailureRetryHint,
+                onRetry: retryDocumentSave,
+                onDismiss: { dismissedSaveErrorID = error.id }
+            )
+        }
+        .sheet(item: exportFailure.sheetBinding) { error in
+            SaveFailureSheet(
+                error: error,
+                title: L10n.exportFailureTitle,
+                retryTitle: L10n.retry,
+                retryHint: L10n.saveFailureRetryHint,
+                onRetry: { exportFailure.retry() },
+                onDismiss: { exportFailure.dismiss() }
+            )
+        }
+        .sheet(item: reopenFailure.sheetBinding) { error in
+            ErrorSheet(
+                error: error,
+                title: L10n.reopenFailureTitle,
+                retryTitle: L10n.retryOpen,
+                retryHint: L10n.reopenRetryHint,
+                onRetry: { reopenFailure.retry() },
+                onDismiss: { reopenFailure.dismiss() }
             )
         }
         .alert(L10n.help, isPresented: $showHelp) {
@@ -130,6 +178,26 @@ struct DocumentWindow: View {
                 recents.noteOpened(url)
             }
         }
+        .onReceive(document.session.$lastSaveError) { error in
+            if error == nil {
+                dismissedSaveErrorID = nil
+            }
+        }
+    }
+
+    private var sessionSaveErrorBinding: Binding<HangyeolError?> {
+        Binding(
+            get: { sessionSaveError },
+            set: { newValue in
+                if newValue == nil, let id = document.session.lastSaveError?.id {
+                    dismissedSaveErrorID = id
+                }
+            }
+        )
+    }
+
+    private func retryDocumentSave() {
+        NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
     }
 
     private func replaceInEngine() {
@@ -169,9 +237,11 @@ struct DocumentWindow: View {
         do {
             try recents.open(item)
         } catch let error as HangyeolError {
-            presentedError = error
+            reopenFailure.present(error) { openRecent(item) }
         } catch {
-            presentedError = .bookmarkFailed(error.localizedDescription)
+            reopenFailure.present(.bookmarkFailed(error.localizedDescription)) {
+                openRecent(item)
+            }
         }
     }
 
@@ -187,11 +257,9 @@ struct DocumentWindow: View {
             do {
                 try PDFExporter.export(document.model, to: url)
             } catch let error as HangyeolError {
-                exportRetry = exportPDF
-                saveFailure = error
+                exportFailure.present(error, retry: exportPDF)
             } catch {
-                exportRetry = exportPDF
-                saveFailure = .saveFailed(error.localizedDescription)
+                exportFailure.present(.saveFailed(error.localizedDescription), retry: exportPDF)
             }
         }
     }
@@ -206,4 +274,12 @@ struct DocumentWindow: View {
 
 #Preview("빈 화면") {
     DocumentWindow(document: .constant(HangyeolDocument()), fileURL: nil)
+}
+
+#Preview("편집됨") {
+    DocumentWindow(
+        document: .constant(HangyeolDocument(model: MockEngine.sampleDocument())),
+        fileURL: nil,
+        isEditedOverride: true
+    )
 }
