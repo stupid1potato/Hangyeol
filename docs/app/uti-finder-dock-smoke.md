@@ -14,36 +14,51 @@ Views · Sheets · L10n 카피 재디자인, known-limitations, XCFramework, eng
 | 열기·드롭 | `Apps/Hangyeol/Hangyeol/System/FileOpening.swift` |
 | 문서 모델 | `HangyeolDocument` (`DocumentGroup` / `FileDocument`) |
 | 샌드박스 | `Hangyeol.entitlements` + `SecurityScopedBookmarks.swift` + `RecentDocuments.swift` |
-| 단위 테스트 | `HangyeolTests/FileOpeningTests.swift`, `HangyeolOpenFailureTests.swift` |
+| 단위 테스트 | `HangyeolTests/FileOpeningTests.swift`, `HangyeolOpenFailureTests.swift`, `HangyeolDocumentTests.swift` |
 
 ---
 
 ## 정적 계약 (리포에서 확인 · Mac 불필요)
 
-한결이 **소유**하는 UTI만 쓴다. 한컴 UTI를 `UTImportedTypeDeclarations`로 가져오지 않는다.
+한결이 **소유(Owner)** 하는 UTI는 `org.hangyeol.*` 뿐이다 (`UTExportedTypeDeclarations`).  
+한컴·HOP 등 타사 HWP/HWPX UTI는 `UTImportedTypeDeclarations`로 **Viewer/Editor import가 필수**다. 한컴 상표·아이콘 에셋은 번들하지 않는다. (PR #34 당시 “한컴 UTI import 금지”는 **철회**.)
 
-| UTI | 확장자 | Swift | `DocumentFileType.typeIdentifier` |
-|-----|--------|-------|-----------------------------------|
-| `org.hangyeol.hwpx` | `hwpx` | `UTType.hangyeolHwpx` (`exportedAs:`) | `hwpx` |
-| `org.hangyeol.hwp` | `hwp` | `UTType.hangyeolHwp` (`exportedAs:`) | `hwp` |
+Mac에서 확인한 확장자 바인딩 (HOP 설치, 한컴 미설치):
 
-`UTType.hangyeolReadableTypes` == `[.hangyeolHwpx, .hangyeolHwp]` == `HangyeolDocument.readableContentTypes`.  
-쓰기 타입은 HWPX만 (`writableContentTypes` == `[.hangyeolHwpx]`). HWP 디스크 저장은 엔진 `SAVE_REJECTED` → `HangyeolError.saveRejected` (PR #31). 그래도 Finder 핸들러는 **Owner + Editor** 로 둔다 (열기·기본 앱 순위).
+- `UTType(filenameExtension: "hwpx")` = `net.golbin.hop.hwpx` (Hangul Word Processor XML document) — **필수 최소셋**
+- `UTType(filenameExtension: "hwp")` = `net.golbin.hop.hwp` (Hangul Word Processor document) — **필수 최소셋**
+- `com.infraware.polarisofficeservice.hwp` 존재 (Polaris, `.hwp`)
+- `com.hancom.hwpx` / `com.hancom.hwp` / `com.haansoft.*` 는 이 Mac에서 lookup **MISSING**. imported에 넣어도 해롭지 않음.
 
-### Info.plist 키 (둘 다 문서 타입에 동일)
+한/글에서 만든 파일(예: Downloads `[양식1] 2026년도 TU-VCC 5기 기술트랙 사업계획서_하베스트랩.hwpx`)도 NSDocument가 HOP UTI 설명으로 거절한 그 케이스다.
+
+| UTI | 역할 | 확장자 | Swift |
+|-----|------|--------|-------|
+| `org.hangyeol.hwpx` | **Owner** (export) | `hwpx` | `UTType.hangyeolHwpx` (`exportedAs:`) |
+| `org.hangyeol.hwp` | **Owner** (export) | `hwp` | `UTType.hangyeolHwp` (`exportedAs:`) |
+| `net.golbin.hop.hwpx` | import (**필수**, HOP `.hwpx` 바인딩) | `hwpx` | `hangyeolImportedHwpxIdentifiers` |
+| `net.golbin.hop.hwp` | import (**필수**, HOP `.hwp` 바인딩) | `hwp` | `hangyeolImportedHwpIdentifiers` |
+| `com.infraware.polarisofficeservice.hwp` | import (Polaris, Mac lookup) | `hwp` | 동일 |
+| `com.haansoft.HancomOfficeViewer.mac.hwpx` | import (한컴 뷰어, 미설치 Mac에선 MISSING) | `hwpx` | 동일 |
+| `com.haansoft.HancomOfficeViewer.mac.hwp` | import (한컴 뷰어, 미설치 Mac에선 MISSING) | `hwp` | 동일 |
+
+`DocumentFileType.typeIdentifier` 는 계속 `org.hangyeol.hwpx` / `org.hangyeol.hwp`. 타사 식별자는 `init?(typeIdentifier:)` · `HangyeolDocument.fileType(from:)` 가 `.hwpx` / `.hwp` 로 매핑한다.
+
+`UTType.hangyeolReadableTypes` 는 `[.hangyeolHwpx, .hangyeolHwp]` **뒤에** import 식별자와 `UTType(filenameExtension: "hwpx"|"hwp")` 바인딩(Polaris 등 미선언 경쟁자)을 붙인다. `HangyeolDocument.readableContentTypes` 와 같다.  
+쓰기 타입은 HWPX만 (`writableContentTypes` == `[.hangyeolHwpx]`). HWP 디스크 저장은 엔진 `SAVE_REJECTED` → `HangyeolError.saveRejected` (PR #31). Finder 핸들러는 **Owner + Editor** 로 둔다 (열기·기본 앱 순위, org.hangyeol 문서 타입).
+
+### Info.plist 키
 
 - `CFBundleTypeRole` = **Editor**
-- `LSHandlerRank` = **Owner**
-- `LSItemContentTypes` = 해당 `org.hangyeol.*` (확장자 배열은 폴백)
-- `UTExportedTypeDeclarations` 에 같은 식별자 + `public.filename-extension` + `public.data` / `public.content`
+- `LSHandlerRank` = **Owner** (org.hangyeol 문서 타입 두 개. 한컴을 Owner로 export하지 않음)
+- `LSItemContentTypes` = `org.hangyeol.*` **와** 해당 확장자의 imported UTI
+- `UTExportedTypeDeclarations` = `org.hangyeol.hwpx` / `org.hangyeol.hwp` + `public.filename-extension` + `public.data` / `public.content`
+- `UTImportedTypeDeclarations` = HOP·한컴 뷰어 UTI (아이콘 키 없음)
 - 루트 `LSSupportsOpeningDocumentsInPlace` = **true** (샌드박스 제자리 열기)
-- `UTImportedTypeDeclarations` **없음**
 
 엔타이틀먼트: `com.apple.security.app-sandbox`, `files.user-selected.read-write`, `files.bookmarks.app-scope`, `files.bookmarks.document-scope`.
 
 `xcodeproj` 는 `GENERATE_INFOPLIST_FILE = YES` + `INFOPLIST_FILE = Hangyeol/Resources/Info.plist` 로 병합한다. 문서 타입·UTI·제자리 열기는 **소스 Info.plist** 가 단일 출처다.
-
-리뷰 (PR #31 기준): 선언·역할·드롭 경로에 공백 없음. **Info.plist diff 없음.**
 
 ---
 
@@ -65,6 +80,27 @@ Finder 더블클릭 / Dock 아이콘 드롭은 **DocumentGroup + Info.plist** �
 
 ---
 
+## 충돌 (다른 앱이 `.hwpx` / `.hwp` UTI를 export)
+
+HOP가 `UTType(filenameExtension: "hwpx")` 를 `net.golbin.hop.hwpx` (localizedDescription: Hangul Word Processor XML document) 로 소유하면, NSDocument는 그 UTI로 연다. `readableContentTypes`가 `org.hangyeol.hwpx` 뿐이면 DocumentGroup이 파일에 닿기 전에 거절한다:
+
+> 문서 'hub-A.hwpx'을(를) 열 수 없습니다. 한결은(는) 'Hangul Word Processor XML document' 포맷인 파일을 열 수 없습니다.
+
+같은 거절이 한/글에서 만든 Downloads `[양식1] 2026년도 TU-VCC 5기 기술트랙 사업계획서_하베스트랩.hwpx` 에서도 났다. Spotlight/`mdls` 가 `org.hangyeol.hwpx` 를 보여도 NSDocument는 확장자→UTI 를 쓴다. `.hwp` 는 HOP(`net.golbin.hop.hwp`)와 Polaris(`com.infraware.polarisofficeservice.hwp`).
+
+필수 최소셋: imported + `LSItemContentTypes` + `hangyeolReadableTypes` 에 `net.golbin.hop.hwpx` / `net.golbin.hop.hwp` + `fileType` 매핑. Owner는 `org.hangyeol.*`.
+
+필수:
+
+1. `UTImportedTypeDeclarations`에 한컴/HOP UTI를 Viewer/Editor로 import (상표·아이콘 번들 금지).
+2. `CFBundleDocumentTypes.LSItemContentTypes`에 `org.hangyeol.*` **와** imported UTI.
+3. `hangyeolReadableTypes`가 import + `UTType(filenameExtension:)` 바인딩을 포함.
+4. `HangyeolDocument.fileType(from:)` 가 경쟁 UTI를 `.hwpx` / `.hwp` 로 매핑 (확장자 폴백).
+
+성공: HOP UTI로 태그된 `.hwpx` 와 `org.hangyeol.hwpx` hub-A 를 DocumentGroup이 모두 수용. 위 시스템 알림 없음.
+
+---
+
 ## Mac 수동 스모크 (개발자2)
 
 전제: macOS 14+ / Apple Silicon, `Apps/Hangyeol/Hangyeol.xcodeproj` 서명 후 Run. XCFramework 없어도 Mock으로 열기 UX는 확인 가능. Real freeze(`.corrupt`) 매핑은 Vendor XCFramework가 있을 때 한 번 더.
@@ -73,8 +109,9 @@ Finder 더블클릭 / Dock 아이콘 드롭은 **DocumentGroup + Info.plist** �
 
 | # | 단계 | 기대 | 통과 |
 |---|------|------|------|
-| 1 | UTI 정합 | Xcode Organizer 또는 `defaults read` / 빌드된 `Hangyeol.app/Contents/Info.plist` 에서 `org.hangyeol.hwpx` / `org.hangyeol.hwp`, `LSHandlerRank=Owner`, `LSSupportsOpeningDocumentsInPlace=true` | ☐ |
+| 1 | UTI 정합 | 빌드된 `Hangyeol.app/Contents/Info.plist` 에 `org.hangyeol.hwpx` / `org.hangyeol.hwp` export, `UTImportedTypeDeclarations`에 `net.golbin.hop.hwpx` 등, `LSHandlerRank=Owner`, `LSSupportsOpeningDocumentsInPlace=true` | ☐ |
 | 2 | Finder에서 `fixtures/hub_hwpxlib_SimpleTable.hwpx` (hub-A) **더블클릭** | 한결이 기동·전면, DocumentGroup 창에 표 본문. Preview/한컴으로 가면 기본 앱 확인 | ☐ |
+| 2b | **충돌** HOP 설치 상태에서 hub-A 더블클릭 (한결로 열기) | HOP UTI로 태그돼도 한결 창이 열린다. “Hangul Word Processor XML document 포맷인 파일을 열 수 없습니다” **없음** | ☐ |
 | 3 | `.hwp` 더블클릭 | COMMIT_OK `.hwp` 가 없으면 번들 `Hangyeol/Resources/Sample/welcome.hwp` 를 Desktop에 복사해 사용. 한결 창이 열린다. F11 등 HOLD 바이너리 쓰지 말 것 | ☐ |
 | 4 | hub-A를 **실행 중** 한결 **Dock 아이콘**에 드롭 | 새 문서 창 (또는 기존 창에 열림). FileOpening 가드는 이 경로에 없음 — Info.plist 타입이 맞아야 함 | ☐ |
 | 5 | 한결이 **꺼진** 상태에서 같은 파일을 Dock / 앱 아이콘에 드롭 | 기동 + 해당 문서 창. 제자리 열기(in-place) — iCloud 아님, 샌드박스 user-selected | ☐ |
@@ -101,7 +138,10 @@ Apps/Hangyeol/Hangyeol.xcodeproj → HangyeolTests
 관련 케이스:
 
 - `FileOpeningTests.testHangyeolSupportsHwpxAndHwpOnly`
-- `testInfoPlistExportedUTIsMatchSwiftAndLaunchServicesKeys` — 소스 Info.plist ↔ `UTType` / Owner / in-place
+- `testInfoPlistExportedUTIsMatchSwiftAndLaunchServicesKeys` — 소스 Info.plist ↔ export Owner / import HOP·한컴 / `hangyeolReadableTypes`
+- `testReadableTypesIncludeExportedUTIs` — import + `UTType(filenameExtension:)` 바인딩
+- `HangyeolDocumentTests.testFileTypeMapsImportedHopHwpxWithoutRequiringHopInstalled` — HOP 미설치에서도 hop UTI → `.hwpx`
+- `testFilenameExtensionBoundTypesAreReadableAndMapToDocumentFileType`
 - `testHangyeolSupportsUsesPathExtensionNotBytes` — F14 false, F16/hub-A true
 - `testHandleDropReturnsFalseWhenNoFileURLProviders`
 - `HangyeolOpenFailureTests.testWrongExtPdfFilenameIsUnsupportedType`
@@ -113,5 +153,5 @@ Apps/Hangyeol/Hangyeol.xcodeproj → HangyeolTests
 
 - ErrorSheet 카피·도움말 알려진 한계 (PR #30 등 UI 트랙)
 - XCFramework 커밋 / engine ABI
-- WYSIWYG, Quick Look, 한컴 UTI import, 기본 앱 강제 (`lsregister` 자동화)
+- WYSIWYG, Quick Look, 기본 앱 강제 (`lsregister` 자동화)
 - F13 `.dat` (COMMIT_OK HWP 없음, detect 게이트는 F14)

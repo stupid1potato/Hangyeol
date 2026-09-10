@@ -14,6 +14,8 @@
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>org.hangyeol.hwpx</string>
+				<string>net.golbin.hop.hwpx</string>
+				<string>com.haansoft.HancomOfficeViewer.mac.hwpx</string>
 			</array>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -32,6 +34,9 @@
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>org.hangyeol.hwp</string>
+				<string>net.golbin.hop.hwp</string>
+				<string>com.infraware.polarisofficeservice.hwp</string>
+				<string>com.haansoft.HancomOfficeViewer.mac.hwp</string>
 			</array>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -86,6 +91,99 @@
 				<array>
 					<string>application/x-hwp</string>
 					<string>application/vnd.hancom.hwp</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>net.golbin.hop.hwpx</string>
+			<key>UTTypeDescription</key>
+			<string>HWPX 문서</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>hwpx</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.haansoft.HancomOfficeViewer.mac.hwpx</string>
+			<key>UTTypeDescription</key>
+			<string>HWPX 문서</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>hwpx</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>net.golbin.hop.hwp</string>
+			<key>UTTypeDescription</key>
+			<string>HWP 문서</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>hwp</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.infraware.polarisofficeservice.hwp</string>
+			<key>UTTypeDescription</key>
+			<string>HWP 문서</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>hwp</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.haansoft.HancomOfficeViewer.mac.hwp</string>
+			<key>UTTypeDescription</key>
+			<string>HWP 문서</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>hwp</string>
 				</array>
 			</dict>
 		</dict>
