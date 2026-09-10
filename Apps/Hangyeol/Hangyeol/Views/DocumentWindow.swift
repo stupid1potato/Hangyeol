@@ -20,6 +20,8 @@ struct DocumentWindow: View {
     @State private var presentedError: HangyeolError?
     @State private var cellEditError: HangyeolError?
     @State private var lastCellEdit: (table: UInt32, row: Int, col: Int, text: String)?
+    @State private var paragraphEditError: HangyeolError?
+    @State private var lastParagraphEdit: (section: UInt32, paragraph: UInt32, oldText: String, newText: String)?
     @State private var engineTables: [TableInfo] = []
     @State private var showHelp = false
     @State private var isDropTargeted = false
@@ -74,8 +76,10 @@ struct DocumentWindow: View {
                 StructuredTextView(
                     model: document.model,
                     canEditCells: document.session.canEditCells,
+                    canEditParagraphs: document.session.canEditParagraphs,
                     engineTables: engineTables,
-                    onTableCellCommit: commitTableCell
+                    onTableCellCommit: commitTableCell,
+                    onParagraphCommit: commitParagraph
                 )
             }
         }
@@ -150,6 +154,16 @@ struct DocumentWindow: View {
                 onDismiss: { cellEditError = nil }
             )
         }
+        .sheet(item: $paragraphEditError) { error in
+            ErrorSheet(
+                error: error,
+                title: L10n.paragraphEditFailureTitle,
+                retryTitle: L10n.retry,
+                retryHint: L10n.paragraphEditRetryHint,
+                onRetry: retryLastParagraphEdit,
+                onDismiss: { paragraphEditError = nil }
+            )
+        }
         .sheet(item: sessionSaveErrorBinding) { error in
             SaveFailureSheet(
                 error: error,
@@ -215,6 +229,9 @@ struct DocumentWindow: View {
         .onChange(of: document.session.canEditCells) { _, _ in
             reloadEngineTables()
         }
+        .onChange(of: document.session.canEditParagraphs) { _, _ in
+            reloadEngineTables()
+        }
         .onChange(of: findQuery) { _, _ in
             lastReplacementCount = nil
         }
@@ -241,7 +258,7 @@ struct DocumentWindow: View {
     }
 
     private func reloadEngineTables() {
-        guard document.session.canEditCells else {
+        guard document.session.canEditCells || document.session.canEditParagraphs else {
             engineTables = []
             return
         }
@@ -282,6 +299,48 @@ struct DocumentWindow: View {
         }
         cellEditError = nil
         commitTableCell(engineIndex: last.table, row: last.row, col: last.col, text: last.text)
+    }
+
+    private func commitParagraph(section: UInt32, paragraph: UInt32, oldText: String, newText: String) {
+        lastParagraphEdit = (section, paragraph, oldText, newText)
+        switch ParagraphEditFlow.commit(
+            canEditParagraphs: document.session.canEditParagraphs,
+            section: section,
+            paragraph: paragraph,
+            oldText: oldText,
+            newText: newText,
+            insert: { sec, para, offset, text in
+                var updated = document
+                try updated.insertText(section: sec, paragraph: para, charOffset: offset, text: text)
+                document = updated
+            },
+            delete: { sec, para, offset, count in
+                var updated = document
+                try updated.deleteRange(section: sec, paragraph: para, charOffset: offset, count: count)
+                document = updated
+            }
+        ) {
+        case .skippedUnavailable, .skippedUnmapped, .skippedUnchanged:
+            return
+        case .updated:
+            reloadEngineTables()
+        case .failed(let error):
+            paragraphEditError = error
+        }
+    }
+
+    private func retryLastParagraphEdit() {
+        guard let last = lastParagraphEdit else {
+            paragraphEditError = nil
+            return
+        }
+        paragraphEditError = nil
+        commitParagraph(
+            section: last.section,
+            paragraph: last.paragraph,
+            oldText: last.oldText,
+            newText: last.newText
+        )
     }
 
     private func replaceInDocument() {
