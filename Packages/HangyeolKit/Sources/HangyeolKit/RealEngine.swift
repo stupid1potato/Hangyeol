@@ -148,6 +148,50 @@ public final class RealEngine: HangyeolEngine, @unchecked Sendable {
         }
     }
 
+    /// Freeze `hg_list_tables`: document-order tables (`index` / `rows` / `cols`).
+    /// Live when linked; `notLinked` when the C stub is compiled in.
+    /// Invalid session maps through existing freeze ↔ Kit rules.
+    public func listTables() throws -> [TableInfo] {
+        try withSession { engine in
+            var total = 0
+            let countStatus = hg_list_tables(engine, nil, 0, &total)
+            try HangyeolEngineSupport.throwIfNeeded(countStatus)
+            guard total > 0 else { return [] }
+
+            var tables = [hg_table_info](
+                repeating: hg_table_info(
+                    index: 0,
+                    section: 0,
+                    paragraph: 0,
+                    control: 0,
+                    rows: 0,
+                    cols: 0
+                ),
+                count: total
+            )
+            var writtenTotal = 0
+            let status = tables.withUnsafeMutableBufferPointer { buf in
+                hg_list_tables(engine, buf.baseAddress, buf.count, &writtenTotal)
+            }
+            try HangyeolEngineSupport.throwIfNeeded(status)
+            let n = min(writtenTotal, tables.count)
+            return tables.prefix(n).map(TableInfo.init)
+        }
+    }
+
+    /// Freeze `hg_set_cell_text` at (`table`, `row`, `col`).
+    /// `table` is `TableInfo.index` from `listTables`.
+    /// Live when linked; `notLinked` when the C stub is compiled in.
+    /// Invalid table/row/col is engine `HG_CORRUPT` / `CORRUPT` (existing mapping).
+    public func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
+        try withSession { engine in
+            let status = text.withCString {
+                hg_set_cell_text(engine, table, row, col, $0)
+            }
+            try HangyeolEngineSupport.throwIfNeeded(status)
+        }
+    }
+
     /// Freeze `hg_last_error` for the last failed call on this thread, or `nil` after success.
     public func lastError() -> String? {
         HangyeolEngineSupport.lastErrorString()

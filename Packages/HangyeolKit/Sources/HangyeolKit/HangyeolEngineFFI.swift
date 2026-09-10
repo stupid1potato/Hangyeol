@@ -126,6 +126,31 @@ public struct HangyeolEngineFFI: HangyeolEngine {
         #endif
     }
 
+    /// Freeze `hg_list_tables`. Live session is `RealEngine.listTables`.
+    public func listTables() throws -> [TableInfo] {
+        #if HANGYEOL_ENGINE_LINKED
+        throw HangyeolKitError.unimplemented
+        #else
+        var count = 0
+        _ = hg_list_tables(nil, nil, 0, &count)
+        throw HangyeolKitError.notLinked
+        #endif
+    }
+
+    /// Freeze `hg_set_cell_text`. Live session is `RealEngine.setCellText`.
+    public func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
+        #if HANGYEOL_ENGINE_LINKED
+        _ = table
+        _ = row
+        _ = col
+        _ = text
+        throw HangyeolKitError.unimplemented
+        #else
+        _ = text.withCString { hg_set_cell_text(nil, table, row, col, $0) }
+        throw HangyeolKitError.notLinked
+        #endif
+    }
+
     /// Freeze `hg_last_error`: thread-local string code, or `nil` after success.
     public static func lastError() -> String? {
         HangyeolEngineSupport.lastErrorString()

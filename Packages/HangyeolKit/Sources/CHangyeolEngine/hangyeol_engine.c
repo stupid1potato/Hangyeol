@@ -120,6 +120,36 @@ hg_status hg_delete_range(
     return HG_UNSUPPORTED;
 }
 
+hg_status hg_list_tables(
+    hg_engine *engine,
+    hg_table_info *out_tables,
+    size_t capacity,
+    size_t *out_count
+) {
+    (void)engine;
+    (void)out_tables;
+    (void)capacity;
+    if (out_count) {
+        *out_count = 0;
+    }
+    return HG_UNSUPPORTED;
+}
+
+hg_status hg_set_cell_text(
+    hg_engine *engine,
+    uint32_t table,
+    uint32_t row,
+    uint32_t col,
+    const char *text
+) {
+    (void)engine;
+    (void)table;
+    (void)row;
+    (void)col;
+    (void)text;
+    return HG_UNSUPPORTED;
+}
+
 const char *hg_last_error(void) {
     return NULL;
 }
