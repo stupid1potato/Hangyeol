@@ -1,3 +1,4 @@
+import HangyeolKit
 import XCTest
 @testable import Hangyeol
 
@@ -50,5 +51,27 @@ final class KitRealEngineTests: XCTestCase {
             var errorDescription: String? { "dummy-kit" }
         }
         XCTAssertEqual(KitRealEngine.mapError(Dummy()), .engineFailed("dummy-kit"))
+    }
+
+    func testSaveRejectedFreezeMapsToSaveRejected() {
+        XCTAssertEqual(
+            KitRealEngine.mapError(HangyeolKitError.status(.unsupported, freeze: .saveRejected)),
+            .saveRejected
+        )
+    }
+
+    func testMapSaveFailureKeepsSaveRejectedAndPromotesEngineFailed() {
+        XCTAssertEqual(
+            HangyeolError.mapSaveFailure(HangyeolError.saveRejected),
+            .saveRejected
+        )
+        XCTAssertEqual(
+            HangyeolError.mapSaveFailure(HangyeolError.engineFailed("CORRUPT")),
+            .saveFailed("CORRUPT")
+        )
+        XCTAssertEqual(
+            HangyeolError.mapSaveFailure(HangyeolKitError.status(.unsupported, freeze: .saveRejected)),
+            .saveRejected
+        )
     }
 }

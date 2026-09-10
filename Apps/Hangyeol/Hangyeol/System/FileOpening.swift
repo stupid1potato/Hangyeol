@@ -68,6 +68,18 @@ enum FileOpening {
         actuallyOpen(url)
     }
 
+    /// Reopen a path after save. Keeps security-scoped access for the document lifetime.
+    static func reopenSaved(url: URL) {
+        open(url: url)
+    }
+
+    /// Reopen via a security-scoped bookmark (recent documents / sandbox).
+    static func reopenSaved(bookmark: Data) throws {
+        let resolved = try SecurityScopedBookmarks.resolve(bookmark)
+        _ = SecurityScopedBookmarks.startAccessing(resolved.url)
+        openResolved(url: resolved.url)
+    }
+
     static func handleDrop(providers: [NSItemProvider]) -> Bool {
         let fileProviders = providers.filter { provider in
             provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)

@@ -54,4 +54,31 @@ final class EngineClientTests: XCTestCase {
             }
         }
     }
+
+    func testMakeEngineReturnsIndependentInstances() {
+        EngineClient.resetToMock()
+        let first = EngineClient.makeEngine()
+        let second = EngineClient.makeEngine()
+        XCTAssertTrue(first is MockEngine)
+        XCTAssertTrue(second is MockEngine)
+        // Existentials are distinct values; Real would also be distinct class instances.
+        let sessionA = DocumentSession(engine: first)
+        let sessionB = DocumentSession(engine: second)
+        XCTAssertFalse(sessionA === sessionB)
+    }
+
+    func testResetToMockForcesFactoryWhileCurrentCanStillBeSwapped() {
+        EngineClient.resetToMock()
+        EngineClient.current = KitRealEngine()
+        XCTAssertFalse(EngineClient.isUsingMock)
+        XCTAssertTrue(EngineClient.makeEngine() is MockEngine)
+
+        EngineClient.resetToDefault()
+        let engine = EngineClient.makeEngine()
+        if KitRealEngine.isAvailable && !EngineClient.prefersMock {
+            XCTAssertTrue(engine is KitRealEngine)
+        } else {
+            XCTAssertTrue(engine is MockEngine)
+        }
+    }
 }

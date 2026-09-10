@@ -15,6 +15,7 @@
 		00000000000000000000000B /* DocumentModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000C /* DocumentModel.swift */; };
 		00000000000000000000000D /* MockEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000E /* MockEngine.swift */; };
 		00000000000000000000000F /* EngineClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000010 /* EngineClient.swift */; };
+		000000000000000000000087 /* DocumentSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000086 /* DocumentSession.swift */; };
 		000000000000000000000081 /* KitRealEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000080 /* KitRealEngine.swift */; };
 		000000000000000000000090 /* HangyeolKit in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000092 /* HangyeolKit */; };
 		000000000000000000000011 /* HangyeolError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000012 /* HangyeolError.swift */; };
@@ -37,6 +38,7 @@
 		000000000000000000000073 /* FileOpeningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000072 /* FileOpeningTests.swift */; };
 		000000000000000000000083 /* EngineClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000082 /* EngineClientTests.swift */; };
 		000000000000000000000085 /* KitRealEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000084 /* KitRealEngineTests.swift */; };
+		000000000000000000000089 /* DocumentSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000088 /* DocumentSessionTests.swift */; };
 		000000000000000000000031 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000032 /* Assets.xcassets */; };
 		000000000000000000000033 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000034 /* Localizable.strings */; };
 		000000000000000000000035 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000036 /* InfoPlist.strings */; };
@@ -64,6 +66,7 @@
 		00000000000000000000000C /* DocumentModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentModel.swift; sourceTree = "<group>"; };
 		00000000000000000000000E /* MockEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockEngine.swift; sourceTree = "<group>"; };
 		000000000000000000000010 /* EngineClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineClient.swift; sourceTree = "<group>"; };
+		000000000000000000000086 /* DocumentSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentSession.swift; sourceTree = "<group>"; };
 		000000000000000000000080 /* KitRealEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KitRealEngine.swift; sourceTree = "<group>"; };
 		000000000000000000000012 /* HangyeolError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HangyeolError.swift; sourceTree = "<group>"; };
 		000000000000000000000014 /* DocumentWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentWindow.swift; sourceTree = "<group>"; };
@@ -85,6 +88,7 @@
 		000000000000000000000072 /* FileOpeningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOpeningTests.swift; sourceTree = "<group>"; };
 		000000000000000000000082 /* EngineClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineClientTests.swift; sourceTree = "<group>"; };
 		000000000000000000000084 /* KitRealEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KitRealEngineTests.swift; sourceTree = "<group>"; };
+		000000000000000000000088 /* DocumentSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentSessionTests.swift; sourceTree = "<group>"; };
 		000000000000000000000032 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		00000000000000000000003E /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
 		00000000000000000000003F /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -162,6 +166,7 @@
 				00000000000000000000000C /* DocumentModel.swift */,
 				00000000000000000000000E /* MockEngine.swift */,
 				000000000000000000000080 /* KitRealEngine.swift */,
+				000000000000000000000086 /* DocumentSession.swift */,
 				000000000000000000000010 /* EngineClient.swift */,
 				000000000000000000000012 /* HangyeolError.swift */,
 			);
@@ -231,6 +236,7 @@
 				000000000000000000000072 /* FileOpeningTests.swift */,
 				000000000000000000000082 /* EngineClientTests.swift */,
 				000000000000000000000084 /* KitRealEngineTests.swift */,
+				000000000000000000000088 /* DocumentSessionTests.swift */,
 			);
 			path = HangyeolTests;
 			sourceTree = "<group>";
@@ -351,6 +357,7 @@
 				00000000000000000000000B /* DocumentModel.swift in Sources */,
 				00000000000000000000000D /* MockEngine.swift in Sources */,
 				000000000000000000000081 /* KitRealEngine.swift in Sources */,
+				000000000000000000000087 /* DocumentSession.swift in Sources */,
 				00000000000000000000000F /* EngineClient.swift in Sources */,
 				000000000000000000000011 /* HangyeolError.swift in Sources */,
 				000000000000000000000013 /* DocumentWindow.swift in Sources */,
@@ -379,6 +386,7 @@
 				000000000000000000000073 /* FileOpeningTests.swift in Sources */,
 				000000000000000000000083 /* EngineClientTests.swift in Sources */,
 				000000000000000000000085 /* KitRealEngineTests.swift in Sources */,
+				000000000000000000000089 /* DocumentSessionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

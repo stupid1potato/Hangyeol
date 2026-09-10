@@ -9,6 +9,7 @@ protocol HangyeolEngine: Sendable {
 
 /// Live DocumentCore session extras (Kit `RealEngine` via `KitRealEngine`).
 protocol HangyeolLiveSession: HangyeolEngine {
+    var isOpen: Bool { get }
     func replaceText(find: String, replace: String) throws -> Int
     func displayModel(type: DocumentFileType, title: String) throws -> DocumentModel
     func saveHwpx(to path: String) throws
@@ -20,6 +21,8 @@ enum EngineClient {
 
     private static let holder = Holder()
 
+    /// Process-wide factory probe / test seam. **Not** the open document's session.
+    /// File open/save must use `HangyeolDocument.session` (`DocumentSession`).
     static var current: any HangyeolEngine {
         get { holder.engine }
         set { holder.engine = newValue }
@@ -32,11 +35,14 @@ enum EngineClient {
     }
 
     /// Process-level rollback. Does not persist UserDefaults.
+    /// Subsequent `makeEngine()` (new documents) also return Mock until `resetToDefault()`.
     static func resetToMock() {
+        holder.forceMock = true
         current = MockEngine()
     }
 
     static func resetToDefault() {
+        holder.forceMock = false
         current = makeDefaultEngine()
     }
 
@@ -53,6 +59,14 @@ enum EngineClient {
         return value == "1" || value == "true" || value == "yes"
     }
 
+    /// New engine instance for one document. Does not touch `current`'s live `hg_engine*`.
+    static func makeEngine() -> any HangyeolEngine {
+        if holder.forceMock {
+            return MockEngine()
+        }
+        return makeDefaultEngine()
+    }
+
     /// Default: Real when the XCFramework is linked and Mock is not forced; else Mock.
     static func makeDefaultEngine() -> any HangyeolEngine {
         if prefersMock {
@@ -64,7 +78,8 @@ enum EngineClient {
         return MockEngine()
     }
 
-    /// Smoke / find-replace: Kit `replaceText` on the open session.
+    /// Smoke / find-replace against `current` only (tests / process probe).
+    /// Documents must call `HangyeolDocument.replaceText` / `DocumentSession.replaceText`.
     static func replaceText(find: String, replace: String) throws -> Int {
         guard let session = liveSession else {
             throw HangyeolError.notYetImplemented(String(
@@ -98,6 +113,20 @@ enum EngineClient {
     private final class Holder: @unchecked Sendable {
         private let lock = NSLock()
         private var _engine: any HangyeolEngine = EngineClient.makeDefaultEngine()
+        private var _forceMock = false
+
+        var forceMock: Bool {
+            get {
+                lock.lock()
+                defer { lock.unlock() }
+                return _forceMock
+            }
+            set {
+                lock.lock()
+                defer { lock.unlock() }
+                _forceMock = newValue
+            }
+        }
 
         var engine: any HangyeolEngine {
             get {

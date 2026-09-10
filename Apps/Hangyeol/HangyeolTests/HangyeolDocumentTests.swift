@@ -3,6 +3,12 @@ import XCTest
 @testable import Hangyeol
 
 final class HangyeolDocumentTests: XCTestCase {
+    override func tearDown() {
+        UserDefaults.standard.removeObject(forKey: EngineClient.useMockFlagKey)
+        EngineClient.resetToDefault()
+        super.tearDown()
+    }
+
     func testReadableTypesIncludeHwpxAndHwp() {
         XCTAssertTrue(HangyeolDocument.readableContentTypes.contains(.hangyeolHwpx))
         XCTAssertTrue(HangyeolDocument.readableContentTypes.contains(.hangyeolHwp))
@@ -30,5 +36,32 @@ final class HangyeolDocumentTests: XCTestCase {
         XCTAssertTrue(EngineClient.current is MockEngine)
         let model = try EngineClient.current.open(data: Data("sample".utf8), type: .hwpx)
         XCTAssertFalse(model.isEmpty)
+    }
+
+    func testNewDocumentsEachBindASession() {
+        EngineClient.resetToMock()
+        let a = HangyeolDocument()
+        let b = HangyeolDocument()
+        XCTAssertFalse(a.session === b.session)
+    }
+
+    func testOpenConfigurationDoesNotUseProcessSingleton() throws {
+        EngineClient.resetToMock()
+        var snapshot = MockEngine.sampleDocument()
+        snapshot.metadata.title = ""
+        let payload = try JSONEncoder().encode(snapshot)
+        EngineClient.current = KitRealEngine()
+
+        let wrapper = FileWrapper(regularFileWithContents: payload)
+        wrapper.filename = "singleton-clobber.hwpx"
+        let document = try HangyeolDocument(
+            configuration: HangyeolDocument.ReadConfiguration(
+                contentType: .hangyeolHwpx,
+                file: wrapper
+            )
+        )
+        XCTAssertTrue(document.session.isUsingMock)
+        XCTAssertFalse(document.model.isEmpty)
+        XCTAssertEqual(document.model.metadata.title, "singleton-clobber")
     }
 }

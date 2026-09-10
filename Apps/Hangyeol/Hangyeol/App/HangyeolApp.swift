@@ -5,7 +5,9 @@ struct HangyeolApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        DocumentGroup(newDocument: HangyeolDocument()) { file in
+        // Closure so each untitled window gets its own DocumentSession
+        // (value-template would share the class instance across New Document).
+        DocumentGroup(newDocument: { HangyeolDocument() }) { file in
             DocumentWindow(document: file.$document, fileURL: file.fileURL)
                 .environment(\.locale, Locale(identifier: "ko_KR"))
         }

@@ -59,18 +59,12 @@ final class RecentDocuments: ObservableObject {
     }
 
     func open(_ item: Item) throws {
-        var url = item.url
         if let bookmark = item.bookmark {
-            let resolved = try SecurityScopedBookmarks.resolve(bookmark)
-            url = resolved.url
-            _ = SecurityScopedBookmarks.startAccessing(url)
-            if resolved.isStale {
-                noteOpened(url)
-            }
-        } else {
-            _ = SecurityScopedBookmarks.startAccessing(url)
+            try FileOpening.reopenSaved(bookmark: bookmark)
+            return
         }
-        FileOpening.openResolved(url: url)
+        _ = SecurityScopedBookmarks.startAccessing(item.url)
+        FileOpening.openResolved(url: item.url)
     }
 
     func clear() {
