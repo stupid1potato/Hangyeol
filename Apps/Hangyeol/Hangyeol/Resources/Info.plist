@@ -125,13 +125,6 @@
 				<string>public.data</string>
 				<string>public.content</string>
 			</array>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>hwpx</string>
-				</array>
-			</dict>
 		</dict>
 		<dict>
 			<key>UTTypeIdentifier</key>
@@ -179,13 +172,6 @@
 				<string>public.data</string>
 				<string>public.content</string>
 			</array>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>hwp</string>
-				</array>
-			</dict>
 		</dict>
 	</array>
 	<key>LSSupportsOpeningDocumentsInPlace</key>

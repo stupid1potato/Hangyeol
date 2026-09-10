@@ -20,6 +20,14 @@ final class FileOpeningTests: XCTestCase {
         XCTAssertTrue(identifiers.contains("com.infraware.polarisofficeservice.hwp"))
         XCTAssertEqual(UTType.hangyeolImportedHwpxIdentifiers.first, "net.golbin.hop.hwpx")
         XCTAssertEqual(UTType.hangyeolImportedHwpIdentifiers.first, "net.golbin.hop.hwp")
+        XCTAssertEqual(
+            UTType.hangyeolStableImportedIdentifiers,
+            [
+                "net.golbin.hop.hwpx",
+                "net.golbin.hop.hwp",
+                "com.infraware.polarisofficeservice.hwp",
+            ]
+        )
         if let boundHwpx = UTType(filenameExtension: "hwpx") {
             XCTAssertTrue(identifiers.contains(boundHwpx.identifier))
         }
@@ -151,8 +159,11 @@ final class FileOpeningTests: XCTestCase {
         let readable = UTType.hangyeolReadableTypes.map(\.identifier)
         XCTAssertEqual(readable.first, UTType.hangyeolHwpx.identifier)
         XCTAssertTrue(readable.contains(UTType.hangyeolHwp.identifier))
-        for imported in UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers {
-            XCTAssertTrue(readable.contains(imported), "hangyeolReadableTypes missing \(imported)")
+        for stable in UTType.hangyeolStableImportedIdentifiers {
+            XCTAssertTrue(
+                readable.contains(stable),
+                "hangyeolReadableTypes missing stable imported \(stable)"
+            )
         }
 
         let expected: [(id: String, ext: String, imported: [String])] = [
@@ -188,14 +199,26 @@ final class FileOpeningTests: XCTestCase {
         let importedIDs = importedDecls.compactMap { $0["UTTypeIdentifier"] as? String }
         XCTAssertEqual(
             Set(importedIDs),
-            Set(UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers)
+            Set(UTType.hangyeolImportedTypeIdentifiers)
         )
+        let taggedExtensions: [String: String] = [
+            "net.golbin.hop.hwpx": "hwpx",
+            "net.golbin.hop.hwp": "hwp",
+            "com.infraware.polarisofficeservice.hwp": "hwp",
+        ]
         for uti in importedDecls {
             XCTAssertNil(uti["UTTypeIconFile"], "do not bundle third-party type icons")
             XCTAssertNil(uti["UTTypeIconName"], "do not bundle third-party type icons")
-            let tags = try XCTUnwrap(uti["UTTypeTagSpecification"] as? [String: Any])
-            let ext = try XCTUnwrap((tags["public.filename-extension"] as? [String])?.first)
-            XCTAssertTrue(["hwpx", "hwp"].contains(ext), ext)
+            let id = try XCTUnwrap(uti["UTTypeIdentifier"] as? String)
+            if let ext = taggedExtensions[id] {
+                let tags = try XCTUnwrap(uti["UTTypeTagSpecification"] as? [String: Any])
+                XCTAssertEqual(tags["public.filename-extension"] as? [String], [ext])
+            } else {
+                XCTAssertNil(
+                    uti["UTTypeTagSpecification"],
+                    "MISSING 한컴 UTI는 HOP 확장자 바인딩과 합쳐지지 않게 태그 없이 import: \(id)"
+                )
+            }
         }
     }
 
