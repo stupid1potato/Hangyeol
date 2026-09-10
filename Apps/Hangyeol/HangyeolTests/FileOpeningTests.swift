@@ -1,3 +1,4 @@
+import AppKit
 import UniformTypeIdentifiers
 import XCTest
 @testable import Hangyeol
@@ -121,5 +122,106 @@ final class FileOpeningTests: XCTestCase {
             url.standardizedFileURL.path
         )
         XCTAssertTrue(UTType.hangyeolSupports(url: resolved.url))
+    }
+
+    func testInfoPlistExportedUTIsMatchSwiftAndLaunchServicesKeys() throws {
+        let data = try Data(contentsOf: try SourceTree.infoPlist())
+        let plist = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
+        )
+
+        XCTAssertEqual(plist["LSSupportsOpeningDocumentsInPlace"] as? Bool, true)
+        XCTAssertNil(
+            plist["UTImportedTypeDeclarations"],
+            "Hangyeol owns org.hangyeol.*; do not import a third-party HWP UTI"
+        )
+
+        XCTAssertEqual(UTType.hangyeolHwpx.identifier, "org.hangyeol.hwpx")
+        XCTAssertEqual(UTType.hangyeolHwp.identifier, "org.hangyeol.hwp")
+        XCTAssertEqual(DocumentFileType.hwpx.typeIdentifier, UTType.hangyeolHwpx.identifier)
+        XCTAssertEqual(DocumentFileType.hwp.typeIdentifier, UTType.hangyeolHwp.identifier)
+        XCTAssertEqual(
+            UTType.hangyeolReadableTypes.map(\.identifier),
+            [UTType.hangyeolHwpx.identifier, UTType.hangyeolHwp.identifier]
+        )
+
+        let expected: [(id: String, ext: String)] = [
+            (UTType.hangyeolHwpx.identifier, "hwpx"),
+            (UTType.hangyeolHwp.identifier, "hwp"),
+        ]
+
+        let documents = try XCTUnwrap(plist["CFBundleDocumentTypes"] as? [[String: Any]])
+        XCTAssertEqual(documents.count, expected.count)
+        for (index, spec) in expected.enumerated() {
+            let doc = documents[index]
+            XCTAssertEqual(doc["CFBundleTypeRole"] as? String, "Editor")
+            XCTAssertEqual(doc["LSHandlerRank"] as? String, "Owner")
+            XCTAssertEqual(doc["LSItemContentTypes"] as? [String], [spec.id])
+            XCTAssertEqual(doc["CFBundleTypeExtensions"] as? [String], [spec.ext])
+        }
+
+        let exported = try XCTUnwrap(plist["UTExportedTypeDeclarations"] as? [[String: Any]])
+        XCTAssertEqual(exported.count, expected.count)
+        for (index, spec) in expected.enumerated() {
+            let uti = exported[index]
+            XCTAssertEqual(uti["UTTypeIdentifier"] as? String, spec.id)
+            let tags = try XCTUnwrap(uti["UTTypeTagSpecification"] as? [String: Any])
+            XCTAssertEqual(tags["public.filename-extension"] as? [String], [spec.ext])
+            let conforms = try XCTUnwrap(uti["UTTypeConformsTo"] as? [String])
+            XCTAssertTrue(conforms.contains("public.data"), spec.id)
+            XCTAssertTrue(conforms.contains("public.content"), spec.id)
+        }
+    }
+
+    func testHangyeolSupportsUsesPathExtensionNotBytes() throws {
+        XCTAssertFalse(UTType.hangyeolSupports(url: try SourceTree.fixture("14_wrong_ext_hwpx.pdf")))
+        XCTAssertTrue(UTType.hangyeolSupports(url: try SourceTree.fixture("16_corrupt_truncated.hwpx")))
+        XCTAssertTrue(UTType.hangyeolSupports(url: try SourceTree.fixture("hub_hwpxlib_SimpleTable.hwpx")))
+        XCTAssertFalse(UTType.hangyeolSupports(url: URL(fileURLWithPath: "/tmp/no-extension")))
+        XCTAssertFalse(UTType.hangyeolSupports(url: URL(fileURLWithPath: "/tmp/14_wrong_ext_hwpx.PDF")))
+    }
+
+    @MainActor
+    func testHandleDropReturnsFalseWhenNoFileURLProviders() {
+        XCTAssertFalse(FileOpening.handleDrop(providers: []))
+        let text = NSItemProvider(object: "hello" as NSString)
+        XCTAssertFalse(FileOpening.handleDrop(providers: [text]))
+    }
+
+    @MainActor
+    func testOpenAndOpenResolvedGuardUnsupportedExtension() {
+        XCTAssertEqual(
+            FileOpening.mappedError(HangyeolError.unsupportedType("14_wrong_ext_hwpx.pdf")),
+            .unsupportedType("14_wrong_ext_hwpx.pdf")
+        )
+        XCTAssertFalse(
+            UTType.hangyeolSupports(url: URL(fileURLWithPath: "/tmp/14_wrong_ext_hwpx.pdf"))
+        )
+    }
+}
+
+private enum SourceTree {
+    static func infoPlist() throws -> URL {
+        var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        for _ in 0..<10 {
+            let candidate = dir.appendingPathComponent("Hangyeol/Resources/Info.plist")
+            if FileManager.default.fileExists(atPath: candidate.path) {
+                return candidate
+            }
+            dir.deleteLastPathComponent()
+        }
+        throw XCTSkip("missing Hangyeol/Resources/Info.plist")
+    }
+
+    static func fixture(_ filename: String) throws -> URL {
+        var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        for _ in 0..<10 {
+            let candidate = dir.appendingPathComponent("fixtures").appendingPathComponent(filename)
+            if FileManager.default.fileExists(atPath: candidate.path) {
+                return candidate
+            }
+            dir.deleteLastPathComponent()
+        }
+        throw XCTSkip("missing fixtures/\(filename)")
     }
 }
