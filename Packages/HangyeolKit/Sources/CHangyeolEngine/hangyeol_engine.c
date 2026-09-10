@@ -135,6 +135,21 @@ hg_status hg_list_tables(
     return HG_UNSUPPORTED;
 }
 
+hg_status hg_list_images(
+    hg_engine *engine,
+    hg_image_info *out_images,
+    size_t capacity,
+    size_t *out_count
+) {
+    (void)engine;
+    (void)out_images;
+    (void)capacity;
+    if (out_count) {
+        *out_count = 0;
+    }
+    return HG_UNSUPPORTED;
+}
+
 hg_status hg_set_cell_text(
     hg_engine *engine,
     uint32_t table,

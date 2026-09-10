@@ -179,6 +179,30 @@ public final class RealEngine: HangyeolEngine, @unchecked Sendable {
         }
     }
 
+    /// Freeze `hg_list_images`: document-order pictures (`index` + size/format meta).
+    /// Live when linked; `notLinked` when the C stub is compiled in.
+    /// IR metadata only — not a BinData extract API (`docs/engine/image-meta.md`).
+    public func listImages() throws -> [ImageInfo] {
+        try withSession { engine in
+            var total = 0
+            let countStatus = hg_list_images(engine, nil, 0, &total)
+            try HangyeolEngineSupport.throwIfNeeded(countStatus)
+            guard total > 0 else { return [] }
+
+            var images = [hg_image_info](
+                repeating: HangyeolEngineSupport.zeroedCStruct(),
+                count: total
+            )
+            var writtenTotal = 0
+            let status = images.withUnsafeMutableBufferPointer { buf in
+                hg_list_images(engine, buf.baseAddress, buf.count, &writtenTotal)
+            }
+            try HangyeolEngineSupport.throwIfNeeded(status)
+            let n = min(writtenTotal, images.count)
+            return images.prefix(n).map(ImageInfo.init)
+        }
+    }
+
     /// Freeze `hg_set_cell_text` at (`table`, `row`, `col`).
     /// `table` is `TableInfo.index` from `listTables`.
     /// Live when linked; `notLinked` when the C stub is compiled in.

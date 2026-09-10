@@ -48,10 +48,51 @@ public struct TableInfo: Sendable, Equatable {
     }
 }
 
+/// One picture in document order (`hg_image_info`).
+/// `index` addresses the picture; `width`/`height` + `format` / `binDataId` / `href`
+/// are size/format meta. Image UI (ImageBlock views) is frontend-owned.
+/// Not a BinData extract or keep-on-save API (`docs/engine/image-meta.md`).
+public struct ImageInfo: Sendable, Equatable {
+    public var index: UInt32
+    public var section: UInt32
+    public var paragraph: UInt32
+    public var control: UInt32
+    public var width: UInt32
+    public var height: UInt32
+    public var byteLen: UInt32
+    public var binDataId: UInt32
+    public var format: String
+    public var href: String
+
+    public init(
+        index: UInt32,
+        section: UInt32,
+        paragraph: UInt32,
+        control: UInt32,
+        width: UInt32,
+        height: UInt32,
+        byteLen: UInt32,
+        binDataId: UInt32,
+        format: String,
+        href: String
+    ) {
+        self.index = index
+        self.section = section
+        self.paragraph = paragraph
+        self.control = control
+        self.width = width
+        self.height = height
+        self.byteLen = byteLen
+        self.binDataId = binDataId
+        self.format = format
+        self.href = href
+    }
+}
+
 /// Same boundary as the app `HangyeolEngine` protocol (`open` / `save`).
 /// Freeze edit ABI (`hg_plain_text` / `hg_replace_text` / `hg_save_hwpx` /
 /// `hg_insert_text` / `hg_delete_range` / `hg_list_tables` / `hg_set_cell_text` /
-/// `hg_last_error`) lives on `RealEngine`.
+/// `hg_list_images` / `hg_last_error`) lives on `RealEngine`.
 /// The app wraps this type in `KitRealEngine`; `MockEngine` remains for rollback.
 public protocol HangyeolEngine: Sendable {
     func open(data: Data, type: DocumentFileType) throws -> DocumentModel
