@@ -68,7 +68,8 @@ The derived HWPX is Apache-2.0 (hub-A / hwpxlib). It is **not** committed. Hangu
 ### Apple Silicon XCFramework / staticlib
 
 macOS `aarch64-apple-darwin` (Mac host required; Linux CI cannot emit Apple binaries):
-[docs/engine/xcframework.md](../docs/engine/xcframework.md)
+[docs/engine/xcframework.md](../docs/engine/xcframework.md).
+If `libhangyeol_engine.a` lands only under `release/deps/`, copy or symlink it to `release/` before `xcodebuild -create-xcframework`.
 
 ## Layout
 
