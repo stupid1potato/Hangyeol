@@ -60,7 +60,66 @@ final class KitRealEngineTests: XCTestCase {
         )
     }
 
-    func testMapSaveFailureKeepsSaveRejectedAndPromotesEngineFailed() {
+    func testEncryptedFreezeMapsToEncrypted() {
+        XCTAssertEqual(
+            KitRealEngine.mapError(HangyeolKitError.status(.password, freeze: .encrypted)),
+            .encrypted
+        )
+        XCTAssertEqual(
+            KitRealEngine.mapError(HangyeolKitError.status(.password)),
+            .encrypted
+        )
+        XCTAssertEqual(
+            HangyeolError.mapOpenFailure(HangyeolKitError.status(.unsupported, freeze: .encrypted)),
+            .encrypted
+        )
+    }
+
+    func testCorruptFreezeMapsToCorrupt() {
+        XCTAssertEqual(
+            KitRealEngine.mapError(HangyeolKitError.status(.corrupt, freeze: .corrupt)),
+            .corrupt
+        )
+        XCTAssertEqual(
+            KitRealEngine.mapError(HangyeolKitError.status(.corrupt)),
+            .corrupt
+        )
+        XCTAssertEqual(
+            HangyeolError.mapOpenFailure(HangyeolKitError.status(.unsupported, freeze: .corrupt)),
+            .corrupt
+        )
+    }
+
+    func testUnsupportedFreezeMapsToUnsupported() {
+        XCTAssertEqual(
+            KitRealEngine.mapError(HangyeolKitError.status(.unsupported, freeze: .unsupportedVersion)),
+            .unsupported
+        )
+        XCTAssertEqual(
+            KitRealEngine.mapError(HangyeolKitError.status(.unsupported)),
+            .unsupported
+        )
+        XCTAssertEqual(
+            HangyeolError.mapOpenFailure(HangyeolKitError.status(.unsupported, freeze: .unsupportedVersion)),
+            .unsupported
+        )
+    }
+
+    func testFreezeCodesDoNotMapToEngineFailedMush() {
+        let cases: [HangyeolKitError] = [
+            .status(.password, freeze: .encrypted),
+            .status(.corrupt, freeze: .corrupt),
+            .status(.unsupported, freeze: .unsupportedVersion),
+            .status(.unsupported, freeze: .saveRejected)
+        ]
+        for kitError in cases {
+            if case .engineFailed = KitRealEngine.mapError(kitError) {
+                XCTFail("freeze \(kitError) must not collapse to engineFailed")
+            }
+        }
+    }
+
+    func testMapSaveFailureKeepsDedicatedFreezeCases() {
         XCTAssertEqual(
             HangyeolError.mapSaveFailure(HangyeolError.saveRejected),
             .saveRejected
@@ -72,6 +131,18 @@ final class KitRealEngineTests: XCTestCase {
         XCTAssertEqual(
             HangyeolError.mapSaveFailure(HangyeolKitError.status(.unsupported, freeze: .saveRejected)),
             .saveRejected
+        )
+        XCTAssertEqual(
+            HangyeolError.mapSaveFailure(HangyeolError.corrupt),
+            .corrupt
+        )
+        XCTAssertEqual(
+            HangyeolError.mapSaveFailure(HangyeolError.encrypted),
+            .encrypted
+        )
+        XCTAssertEqual(
+            HangyeolError.mapSaveFailure(HangyeolError.unsupported),
+            .unsupported
         )
     }
 }

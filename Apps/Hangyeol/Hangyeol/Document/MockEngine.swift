@@ -14,6 +14,9 @@ struct MockEngine: HangyeolEngine {
                 defaultValue: "모의 엔진이 문서를 열 수 없습니다."
             ))
         }
+        if let mapped = HangyeolOpenBytes.mockFailure(for: data) {
+            throw mapped
+        }
         if let decoded = try? JSONDecoder().decode(DocumentModel.self, from: data),
            !decoded.blocks.isEmpty {
             return decoded
@@ -22,6 +25,9 @@ struct MockEngine: HangyeolEngine {
     }
 
     func save(_ model: DocumentModel, as type: DocumentFileType) throws -> Data {
+        if type == .hwp {
+            throw HangyeolError.saveRejected
+        }
         var snapshot = model
         snapshot.metadata.sourceType = type
         return try JSONEncoder().encode(snapshot)

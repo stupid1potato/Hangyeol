@@ -48,6 +48,18 @@ final class MockEngineTests: XCTestCase {
         }
     }
 
+    func testEncryptedMarkerThrowsEncryptedNotSample() {
+        XCTAssertThrowsError(try engine.open(data: HangyeolOpenBytes.encryptedMarker, type: .hwpx)) { error in
+            XCTAssertEqual(error as? HangyeolError, .encrypted)
+        }
+    }
+
+    func testHwpSaveThrowsSaveRejected() {
+        XCTAssertThrowsError(try engine.save(MockEngine.sampleDocument(), as: .hwp)) { error in
+            XCTAssertEqual(error as? HangyeolError, .saveRejected)
+        }
+    }
+
     func testSaveRoundTripPreservesPlainText() throws {
         let original = MockEngine.sampleDocument()
         let data = try engine.save(original, as: .hwpx)

@@ -43,7 +43,17 @@ final class RetryableFailure: ObservableObject {
 /// Presents `DocumentSession.lastSaveError` without a parallel error store.
 enum SessionSaveFailurePresentation {
     static func presentedError(lastSaveError: HangyeolError?, dismissedID: String?) -> HangyeolError? {
-        guard let error = lastSaveError else { return nil }
+        SessionOpenFailurePresentation.presentedError(
+            lastOpenError: lastSaveError,
+            dismissedID: dismissedID
+        )
+    }
+}
+
+/// Presents `DocumentSession.lastOpenError` on ErrorSheet (`presentedError`).
+enum SessionOpenFailurePresentation {
+    static func presentedError(lastOpenError: HangyeolError?, dismissedID: String?) -> HangyeolError? {
+        guard let error = lastOpenError else { return nil }
         if dismissedID == error.id { return nil }
         return error
     }

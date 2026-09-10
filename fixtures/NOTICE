@@ -48,3 +48,9 @@ hub_hwpxlib_SimpleTable.hwpx. They inherit Apache-2.0 from that sample.
   fixtures/21_prettyprinted_bad.hwpx
     pretty-printed XML + mimetype last/DEFLATE (negative packaging)
     SHA-256 663ab7a9afb212e18e581202ebf3f9a4ce306be7b7a67f15a20b0d695fcf72b2
+
+Synthetic encrypted marker (not a Hangul-encrypted HWP; F15 remains OWNER_HANGUL)
+-------------------------------------------------------------------
+  fixtures/22_encrypted_synthetic.bin
+    UTF-8 marker `HANGYEOL_ENCRYPTED` plus newline (Mock/app ENCRYPTED probe)
+    SHA-256 af0022e4d9dcb25c3ff52118f6cd266085e474bcaf82281374e98f4efb14dd02

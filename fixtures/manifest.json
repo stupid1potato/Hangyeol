@@ -69,6 +69,18 @@
       "license": "derived-from Apache-2.0 hub-A",
       "sourceUrl": "fixtures/hub_hwpxlib_SimpleTable.hwpx",
       "owner": "dev1"
+    },
+    {
+      "id": "F22",
+      "path": "fixtures/22_encrypted_synthetic.bin",
+      "format": "encrypted",
+      "expects": {
+        "encrypted": true,
+        "errorCode": "ENCRYPTED"
+      },
+      "notes": "Synthetic Mock/app marker (UTF-8 HANGYEOL_ENCRYPTED). Not Hangul-owned F15. Real engine unknown-magic is CORRUPT; ENCRYPTED on Real is Kit HangyeolKitError.status(.password, freeze: .encrypted).",
+      "license": "CC0-1.0",
+      "owner": "dev1"
     }
   ]
 }

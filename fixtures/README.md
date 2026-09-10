@@ -45,6 +45,7 @@ neolord0/hwpxlib `testFile/reader_writer/` 사본. Apache-2.0. SHA-256은 [`NOTI
 | F14 | `14_wrong_ext_hwpx.pdf` | HWPX bytes / 잘못된 확장자 | **committed** — hub-A와 바이트 동일, 파일명만 `.pdf`. Week-1 **detect gate는 F14**. |
 | F16 | `16_corrupt_truncated.hwpx` | corrupt (truncated ZIP) | **committed** — hub-A 앞 1024바이트. Week1 파일명은 `.hwp`였으나 COMMIT_OK 베이스가 HWPX라 `.hwpx`로 착지. |
 | F21 | `21_prettyprinted_bad.hwpx` | HWPX 네거티브 패키징 | **committed** — XML pretty-print + mimetype이 마지막·DEFLATE. |
+| F22 | `22_encrypted_synthetic.bin` | encrypted (synthetic marker) | **committed** — Mock/app `HANGYEOL_ENCRYPTED` bytes. Not Hangul F15. Real unknown-magic → CORRUPT; Kit `HG_PASSWORD` / `ENCRYPTED` maps to `HangyeolError.encrypted`. |
 
 ## Owner (Hangul) — 생성 스펙
 

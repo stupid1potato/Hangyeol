@@ -19,6 +19,7 @@ Path convention: `fixtures/{id}_{slug}.{ext}` + `fixtures/manifest.json`.
 | F16 | `fixtures/16_corrupt_truncated.hwpx` | Synthetic truncate of hub-A (not SafeDocs) | derived-from Apache-2.0 hub-A | **COMMIT_OK** (committed). Week1 id was `16_corrupt_truncated.hwp`; path is `.hwpx` because the base is HWPX. |
 | F18 | `fixtures/18_table_image_mix.hwp` | SafeDocs example_with_table.hwp | LICENSE_UNKNOWN | **HOLD_LICENSE** |
 | F21 | `fixtures/21_prettyprinted_bad.hwpx` | Synthetic prettyprint-bad from hub-A | derived-from Apache-2.0 hub-A | **COMMIT_OK** (committed) |
+| F22 | `fixtures/22_encrypted_synthetic.bin` | Synthetic Mock/app `HANGYEOL_ENCRYPTED` marker (not Hangul F15) | CC0 marker bytes | **COMMIT_OK** (committed) — app `HangyeolError.encrypted`. Real unknown-magic is CORRUPT. |
 | hub-A | `fixtures/hub_hwpxlib_SimpleTable.hwpx` | neolord0/hwpxlib testFile/reader_writer/SimpleTable.hwpx | **Apache-2.0** | **COMMIT_OK** (committed) |
 | hub-B | `fixtures/hub_hwpxlib_SimplePicture.hwpx` | hwpxlib SimplePicture.hwpx | **Apache-2.0** | **COMMIT_OK** (committed) |
 | hub-C | `fixtures/hub_hwpxlib_sample1.hwpx` | hwpxlib sample1.hwpx | **Apache-2.0** | **COMMIT_OK** (committed) |
