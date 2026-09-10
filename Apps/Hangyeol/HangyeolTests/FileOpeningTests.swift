@@ -148,12 +148,14 @@ final class FileOpeningTests: XCTestCase {
         XCTAssertEqual(DocumentFileType.hwpx.typeIdentifier, UTType.hangyeolHwpx.identifier)
         XCTAssertEqual(DocumentFileType.hwp.typeIdentifier, UTType.hangyeolHwp.identifier)
 
-        let readable = UTType.hangyeolReadableTypes.map(\.identifier)
-        XCTAssertEqual(readable.first, UTType.hangyeolHwpx.identifier)
+        let readable = Set(UTType.hangyeolReadableTypes.map(\.identifier))
+        XCTAssertEqual(UTType.hangyeolReadableTypes.first?.identifier, UTType.hangyeolHwpx.identifier)
         XCTAssertTrue(readable.contains(UTType.hangyeolHwp.identifier))
-        for imported in UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers {
-            XCTAssertTrue(readable.contains(imported), "hangyeolReadableTypes missing \(imported)")
-        }
+        XCTAssertTrue(readable.contains("net.golbin.hop.hwpx"))
+        XCTAssertTrue(readable.contains("net.golbin.hop.hwp"))
+        XCTAssertTrue(readable.contains("com.infraware.polarisofficeservice.hwp"))
+        // Do not require com.haansoft.* in readable identifiers: UTType(importedAs:)
+        // may coalesce to the extension-bound UTI (HOP) when a competitor owns the tag.
 
         let expected: [(id: String, ext: String, imported: [String])] = [
             (UTType.hangyeolHwpx.identifier, "hwpx", UTType.hangyeolImportedHwpxIdentifiers),
@@ -186,10 +188,13 @@ final class FileOpeningTests: XCTestCase {
 
         let importedDecls = try XCTUnwrap(plist["UTImportedTypeDeclarations"] as? [[String: Any]])
         let importedIDs = importedDecls.compactMap { $0["UTTypeIdentifier"] as? String }
+        // Keep com.haansoft.* in UTImportedTypeDeclarations even when readable coalesces them.
         XCTAssertEqual(
             Set(importedIDs),
             Set(UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers)
         )
+        XCTAssertTrue(importedIDs.contains("com.haansoft.HancomOfficeViewer.mac.hwpx"))
+        XCTAssertTrue(importedIDs.contains("com.haansoft.HancomOfficeViewer.mac.hwp"))
         for uti in importedDecls {
             XCTAssertNil(uti["UTTypeIconFile"], "do not bundle third-party type icons")
             XCTAssertNil(uti["UTTypeIconName"], "do not bundle third-party type icons")

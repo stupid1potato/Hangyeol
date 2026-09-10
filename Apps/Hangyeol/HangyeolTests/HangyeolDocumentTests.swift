@@ -14,7 +14,9 @@ final class HangyeolDocumentTests: XCTestCase {
         XCTAssertEqual(identifiers.first, UTType.hangyeolHwpx.identifier)
         XCTAssertTrue(identifiers.contains(UTType.hangyeolHwpx.identifier))
         XCTAssertTrue(identifiers.contains(UTType.hangyeolHwp.identifier))
-        for imported in UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers {
+        // Skip com.haansoft.*: importedAs may coalesce to HOP when it owns the extension tag.
+        for imported in UTType.hangyeolImportedHwpxIdentifiers + UTType.hangyeolImportedHwpIdentifiers
+        where !imported.hasPrefix("com.haansoft.") {
             XCTAssertTrue(identifiers.contains(imported), "readableContentTypes missing imported \(imported)")
         }
     }

@@ -32,6 +32,7 @@ extension UTType {
         var types: [UTType] = [.hangyeolHwpx, .hangyeolHwp]
         var seen = Set(types.map(\.identifier))
         for identifier in hangyeolImportedHwpxIdentifiers + hangyeolImportedHwpIdentifiers {
+            // importedAs may coalesce to the extension-bound UTI when a competitor owns the tag.
             let imported = UTType(importedAs: identifier)
             if seen.insert(imported.identifier).inserted {
                 types.append(imported)
