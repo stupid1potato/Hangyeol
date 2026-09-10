@@ -34,6 +34,7 @@
 		0000000000000000000000C3 /* TableCellEditUXTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000C2 /* TableCellEditUXTests.swift */; };
 		0000000000000000000000D1 /* ParagraphEditPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000D0 /* ParagraphEditPresentation.swift */; };
 		0000000000000000000000D3 /* ParagraphEditUXTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000D2 /* ParagraphEditUXTests.swift */; };
+		0000000000000000000000E1 /* SessionUndoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000E0 /* SessionUndoTests.swift */; };
 		000000000000000000000021 /* PDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000022 /* PDFExporter.swift */; };
 		000000000000000000000023 /* PrintCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000024 /* PrintCoordinator.swift */; };
 		000000000000000000000025 /* SecurityScopedBookmarks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000026 /* SecurityScopedBookmarks.swift */; };
@@ -93,6 +94,7 @@
 		0000000000000000000000C2 /* TableCellEditUXTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableCellEditUXTests.swift; sourceTree = "<group>"; };
 		0000000000000000000000D0 /* ParagraphEditPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParagraphEditPresentation.swift; sourceTree = "<group>"; };
 		0000000000000000000000D2 /* ParagraphEditUXTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParagraphEditUXTests.swift; sourceTree = "<group>"; };
+		0000000000000000000000E0 /* SessionUndoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionUndoTests.swift; sourceTree = "<group>"; };
 		000000000000000000000022 /* PDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFExporter.swift; sourceTree = "<group>"; };
 		000000000000000000000024 /* PrintCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrintCoordinator.swift; sourceTree = "<group>"; };
 		000000000000000000000026 /* SecurityScopedBookmarks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityScopedBookmarks.swift; sourceTree = "<group>"; };
@@ -264,6 +266,7 @@
 				0000000000000000000000B2 /* FindReplaceUXTests.swift */,
 				0000000000000000000000C2 /* TableCellEditUXTests.swift */,
 				0000000000000000000000D2 /* ParagraphEditUXTests.swift */,
+				0000000000000000000000E0 /* SessionUndoTests.swift */,
 			);
 			path = HangyeolTests;
 			sourceTree = "<group>";
@@ -423,6 +426,7 @@
 				0000000000000000000000B3 /* FindReplaceUXTests.swift in Sources */,
 				0000000000000000000000C3 /* TableCellEditUXTests.swift in Sources */,
 				0000000000000000000000D3 /* ParagraphEditUXTests.swift in Sources */,
+				0000000000000000000000E1 /* SessionUndoTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

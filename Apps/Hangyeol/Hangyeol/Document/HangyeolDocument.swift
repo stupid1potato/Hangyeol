@@ -53,6 +53,7 @@ struct HangyeolDocument: FileDocument {
     }
 
     /// Apply Kit `replaceText` on **this** document's live session and refresh the display model.
+    /// Successful live edits register on the window `UndoManager` automatically.
     mutating func replaceText(find: String, replace: String) throws -> Int {
         let count = try session.replaceText(find: find, replace: replace)
         model = try session.displayModel(
@@ -69,6 +70,7 @@ struct HangyeolDocument: FileDocument {
     }
 
     /// Apply Kit `setCellText` on **this** document's live session and refresh the display model.
+    /// Successful live edits register on the window `UndoManager` automatically.
     mutating func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
         try session.setCellText(table: table, row: row, col: col, text: text)
         model = try session.displayModel(
@@ -79,6 +81,7 @@ struct HangyeolDocument: FileDocument {
     }
 
     /// Apply Kit `insertText` on **this** document's live session and refresh the display model.
+    /// Successful live edits register on the window `UndoManager` automatically.
     mutating func insertText(
         section: UInt32,
         paragraph: UInt32,
@@ -99,6 +102,7 @@ struct HangyeolDocument: FileDocument {
     }
 
     /// Apply Kit `deleteRange` on **this** document's live session and refresh the display model.
+    /// Successful live edits register on the window `UndoManager` automatically.
     mutating func deleteRange(
         section: UInt32,
         paragraph: UInt32,
@@ -118,10 +122,55 @@ struct HangyeolDocument: FileDocument {
         hasUnsavedEdits = true
     }
 
+    /// Re-read the live display model after `UndoManager` undo/redo.
+    /// The document window observes `session.undoGeneration` and calls this.
+    mutating func refreshAfterUndoRedo() {
+        guard session.canEdit else {
+            if session.undoManager != nil {
+                hasUnsavedEdits = session.hasUndoableEdits
+            }
+            return
+        }
+        if let updated = try? session.displayModel(
+            type: model.metadata.sourceType,
+            title: model.metadata.title
+        ) {
+            model = updated
+        }
+        if session.undoManager != nil {
+            hasUnsavedEdits = session.hasUndoableEdits
+        }
+    }
+
     private static func fileType(from contentType: UTType) -> DocumentFileType {
         if contentType.conforms(to: .hangyeolHwp) || contentType.identifier == UTType.hangyeolHwp.identifier {
             return .hwp
         }
         return .hwpx
+    }
+}
+
+/// Tiny window hook: bind DocumentGroup's `UndoManager` and refresh the
+/// FileDocument display model after session undo/redo. Not a UI control.
+extension View {
+    func hangyeolSessionUndo(document: Binding<HangyeolDocument>) -> some View {
+        modifier(HangyeolSessionUndoModifier(document: document))
+    }
+}
+
+private struct HangyeolSessionUndoModifier: ViewModifier {
+    @Binding var document: HangyeolDocument
+    @Environment(\.undoManager) private var undoManager
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { document.session.attachUndoManager(undoManager) }
+            .onChange(of: undoManager != nil) { _, _ in
+                document.session.attachUndoManager(undoManager)
+            }
+            .onReceive(document.session.$undoGeneration) { generation in
+                guard generation > 0 else { return }
+                document.refreshAfterUndoRedo()
+            }
     }
 }
