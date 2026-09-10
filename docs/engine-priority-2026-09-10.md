@@ -5,7 +5,8 @@
 ## 확정
 
 - **1순위**: rhwp `DocumentCore` 코어 서브셋 (parser / serial / edit only).
-- **제품 핀**: rustc **≥ 1.88**.
+- **제품 핀**: rustc **≥ 1.89** (PR #9 이후; pinned rhwp cargo graph / `aes 0.9.3`). `engine/Cargo.toml` `rust-version` 필드는 1.88로 남아 있으나 **1.89 미만 엔진 빌드 금지**. CI는 **1.93.1**.
+- Apple Silicon XCFramework / staticlib 절차: [engine/xcframework.md](engine/xcframework.md) (Mac 호스트 필수).
 - **저장 전 필수**: Hangyeol wrapper에서 **linesegarray clear REQUIRED** (기본 export는 `hp:linesegarray` 잔존 → FAIL; clear API로 회복).
 - **F16**: 열기 실패·패닉 없음. rhwp `UNSUPPORTED_FILE_FORMAT` → Hangyeol FFI **`CORRUPT`** 매핑.
 - **openhwp**: **백업 전용**. stable rustc 1.85 크레이트 빌드 **FAIL** (`const_vec_string_slice`).
@@ -17,11 +18,15 @@
 
 ## Mac 한/글 큐
 
-한/글 개봉 스모크는 **Mac 수동 큐**, 엔진 스파이크 착수 전까지 **pending**.
+한/글 개봉 스모크는 **Mac 수동**. clear-before-save 아티팩트 위치:
 
-clear-before-save 이후 개봉할 아티팩트 경로 (생산되면):
+| 위치 | 경로 |
+|------|------|
+| Owner Downloads (이미 복사됨) | `~/Downloads/SimpleTable-rhwp-replaced-cleared.hwpx` |
+| 레포 생성 경로 (gitignore) | `engine/testdata/out/SimpleTable-cleared-replaced.hwpx` |
 
-- `engine/` 스파이크 출력, 또는
-- `poc-notes/rhwp/SimpleTable-rhwp-replaced-cleared.hwpx`
+```bash
+cargo test --manifest-path engine/Cargo.toml hub_a_replace_clear_before_save_roundtrip -- --exact
+```
 
-엔진 스파이크가 해당 파일을 만들기 전에는 경로만 예약한다. 치환본 / clear 후 본 둘 다 큐에 올린다.
+Apple 바이너리 빌드(`.a` / `.dylib` / XCFramework)는 Linux에서 불가. Mac 절차: [engine/xcframework.md](engine/xcframework.md).
