@@ -107,6 +107,27 @@ enum HangyeolEngineSupport {
         guard let bytes, length > 0 else { return Data() }
         return Data(bytes: bytes, count: length)
     }
+
+    /// Zero-fill a C struct (used for `hg_image_info` fixed `char[]` fields).
+    static func zeroedCStruct<T>() -> T {
+        withUnsafeTemporaryAllocation(
+            byteCount: MemoryLayout<T>.size,
+            alignment: MemoryLayout<T>.alignment
+        ) { buf in
+            buf.initializeMemory(as: UInt8.self, repeating: 0)
+            return buf.load(as: T.self)
+        }
+    }
+
+    /// NUL-terminated C `char[]` imported as a Swift tuple.
+    static func cString<T>(from tuple: T) -> String {
+        withUnsafeBytes(of: tuple) { raw in
+            guard let base = raw.baseAddress?.assumingMemoryBound(to: CChar.self) else {
+                return ""
+            }
+            return String(cString: base)
+        }
+    }
 }
 
 extension TableInfo {
@@ -118,6 +139,23 @@ extension TableInfo {
             control: info.control,
             rows: info.rows,
             cols: info.cols
+        )
+    }
+}
+
+extension ImageInfo {
+    init(_ info: hg_image_info) {
+        self.init(
+            index: info.index,
+            section: info.section,
+            paragraph: info.paragraph,
+            control: info.control,
+            width: info.width,
+            height: info.height,
+            byteLen: info.byte_len,
+            binDataId: info.bin_data_id,
+            format: HangyeolEngineSupport.cString(from: info.format),
+            href: HangyeolEngineSupport.cString(from: info.href)
         )
     }
 }

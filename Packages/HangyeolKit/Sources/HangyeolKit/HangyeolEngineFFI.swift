@@ -137,6 +137,17 @@ public struct HangyeolEngineFFI: HangyeolEngine {
         #endif
     }
 
+    /// Freeze `hg_list_images`. Live session is `RealEngine.listImages`.
+    public func listImages() throws -> [ImageInfo] {
+        #if HANGYEOL_ENGINE_LINKED
+        throw HangyeolKitError.unimplemented
+        #else
+        var count = 0
+        _ = hg_list_images(nil, nil, 0, &count)
+        throw HangyeolKitError.notLinked
+        #endif
+    }
+
     /// Freeze `hg_set_cell_text`. Live session is `RealEngine.setCellText`.
     public func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
         #if HANGYEOL_ENGINE_LINKED

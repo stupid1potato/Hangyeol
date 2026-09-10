@@ -16,7 +16,7 @@ Week-3 order: **header sync → XCFramework vendor path → RealEngine (this pac
 
 | Piece | Path | Role |
 |-------|------|------|
-| C ABI (synced) | `Sources/CHangyeolEngine/include/hangyeol_engine.h` | Kit: `hg_open` / `hg_save` / `hg_free_buffer` / `hg_close`. Freeze: `hg_plain_text` / `hg_replace_text` / `hg_save_hwpx` / `hg_insert_text` / `hg_delete_range` / `hg_list_tables` / `hg_set_cell_text` / `hg_last_error` (`hg_table_info`) |
+| C ABI (synced) | `Sources/CHangyeolEngine/include/hangyeol_engine.h` | Kit: `hg_open` / `hg_save` / `hg_free_buffer` / `hg_close`. Freeze: `hg_plain_text` / `hg_replace_text` / `hg_save_hwpx` / `hg_insert_text` / `hg_delete_range` / `hg_list_tables` / `hg_set_cell_text` / `hg_list_images` / `hg_last_error` (`hg_table_info`, `hg_image_info`) |
 | C stub | `Sources/CHangyeolEngine/hangyeol_engine.c` | Compiled **only when the XCFramework is absent**. Returns `HG_UNSUPPORTED` / `NULL` |
 | C shim | `Sources/CHangyeolEngine/shim.c` | Compiled **only when the XCFramework is present**. Header-only clang module; no `hg_*` definitions |
 | `RealEngine` | `Sources/HangyeolKit/RealEngine.swift` | Owns `hg_engine*`; live `hg_*` when linked; `notLinked` fallback when the stub is compiled in |
@@ -61,7 +61,7 @@ Never commit `.xcframework` / `.a` / `.dylib`. `Packages/HangyeolKit/Vendor/` is
 `RealEngine` owns one `hg_engine*` (`hg_open` → `hg_close` in `deinit` / `close()`):
 
 - `open` / `save` (`HangyeolEngine` protocol)
-- `plainText` / `replaceText` / `saveHwpx` / `insertText` / `deleteRange` / `listTables` / `setCellText` / `lastError`
+- `plainText` / `replaceText` / `saveHwpx` / `insertText` / `deleteRange` / `listTables` / `setCellText` / `listImages` / `lastError`
 
 Error mapping (`hg_status` + `hg_last_error`):
 
@@ -95,9 +95,16 @@ Defined as `hg_status` / `HangyeolStatus`:
 
 **Table UI is frontend-owned.** This package does not render TableBlock, edit grids, or change `Apps/Hangyeol` Views / Sheets. Rebuild a local XCFramework from current `engine/` so Vendor exports the new symbols; Linux CI keeps the C stub.
 
+## Images (ABI sync only)
+
+`hg_list_images` (`hg_image_info`) is **ABI coverage** for engine PR #32. Kit `RealEngine.listImages()` maps `index` + `section`/`paragraph`/`control` + size/format meta onto `ImageInfo`. Not a BinData extract or keep-on-save API. See [docs/engine/image-meta.md](../../docs/engine/image-meta.md).
+
+**Image UI is frontend-owned.** This package does not render ImageBlock or change `Apps/Hangyeol` Views / Sheets. After a local Vendor rebuild, Mac `nm` should show `_hg_list_images`.
+
 ## What this package is not
 
 - Not a committed XCFramework / `.a` / `.dylib`
 - Not the app `DocumentModel` (blocks/tables). Kit `DocumentModel` is a file-type placeholder; the app adapter maps `plainText()`
 - Not table UI — Views / TableBlock stay in the app; this is header + Swift wrapper sync only
+- Not image UI — Views / ImageBlock stay in the app; this is header + Swift wrapper sync only
 - Not a replacement that deletes `MockEngine` — the app keeps Mock for rollback
