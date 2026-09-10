@@ -20,7 +20,12 @@ Header: [`include/hangyeol_engine.h`](include/hangyeol_engine.h)
 This header is a **superset** of HangyeolKit
 `Packages/HangyeolKit/Sources/CHangyeolEngine/include/hangyeol_engine.h`
 (Kit `hg_open` / `hg_save` / `hg_free_buffer` / `hg_close`) plus kickoff freeze
-edit symbols. Same names — not a third scheme.
+edit symbols (`hg_plain_text` / `hg_replace_text` / `hg_save_hwpx` /
+`hg_insert_text` / `hg_delete_range` / `hg_list_tables` / `hg_set_cell_text` /
+`hg_last_error`). Same names — not a third scheme.
+
+`hg_list_tables` / `hg_set_cell_text` walk DocumentCore IR only. Kit maps
+`hg_table_info.index` + `rows`/`cols` onto TableBlock cell addressing.
 
 | Freeze code | Kit `hg_status` |
 |-------------|-----------------|
@@ -69,7 +74,7 @@ The derived HWPX is Apache-2.0 (hub-A / hwpxlib). It is **not** committed. Hangu
 
 macOS `aarch64-apple-darwin` (Mac host required; Linux CI cannot emit Apple binaries):
 [docs/engine/xcframework.md](../docs/engine/xcframework.md).
-If `libhangyeol_engine.a` lands only under `release/deps/`, copy or symlink it to `release/` before `xcodebuild -create-xcframework`.
+If `libhangyeol_engine.a` lands only under `release/deps/`, copy or symlink it to `release/` before `xcodebuild -create-xcframework` (`engine/scripts/copy-staticlib-to-release.sh`).
 
 ## Layout
 
@@ -79,6 +84,7 @@ engine/
   src/lib.rs          # FFI + DocumentCore wrapper
   src/error.rs        # freeze ↔ Kit mapping
   include/hangyeol_engine.h
-  tests/gates.rs      # hub-A replace/clear, F14, F16
+  tests/gates.rs      # hub-A replace/clear, set-cell, insert/delete, F14, F16
   testdata/out/       # gitignored generated HWPX
+  scripts/copy-staticlib-to-release.sh  # deps → release .a (macOS XCFramework)
 ```

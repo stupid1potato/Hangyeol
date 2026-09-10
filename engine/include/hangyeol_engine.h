@@ -13,6 +13,16 @@
  *   2) Kickoff freeze edit API
  *      hg_plain_text / hg_replace_text / hg_save_hwpx
  *      plus optional hg_insert_text / hg_delete_range
+ *      plus table: hg_list_tables / hg_set_cell_text
+ *
+ * Kit mapping (tables):
+ *   hg_list_tables     → TableBlock addressing. `hg_table_info.index` is the
+ *                        `table` argument to hg_set_cell_text. `rows`/`cols`
+ *                        size the grid. `section`/`paragraph`/`control` locate
+ *                        the DocumentCore table control for top-level tables.
+ *   hg_set_cell_text   → cell plain-text write at (table, row, col). Merged
+ *                        cells are addressed at any covered grid coordinate
+ *                        (anchor via DocumentCore `cell_grid`).
  *
  * Freeze string codes ↔ Kit hg_status (1:1):
  *   ENCRYPTED            ↔ HG_PASSWORD
@@ -62,6 +72,21 @@ typedef enum hg_file_type {
 
 /** Opaque engine session. Caller owns it and must pass it to hg_close. */
 typedef struct hg_engine hg_engine;
+
+/**
+ * One table in document order (body, then nested cell tables).
+ *
+ * Kit: map to a TableBlock. Pass `index` as `table` to hg_set_cell_text.
+ * `rows` / `cols` are DocumentCore `row_count` / `col_count`.
+ */
+typedef struct hg_table_info {
+    uint32_t index;      /* 0-based document order; hg_set_cell_text `table` */
+    uint32_t section;    /* DocumentCore section index */
+    uint32_t paragraph;  /* body paragraph that owns the (outer) table */
+    uint32_t control;    /* control index in that paragraph (or cell para) */
+    uint32_t rows;
+    uint32_t cols;
+} hg_table_info;
 
 /* -------------------------------------------------------------------------- */
 /* HangyeolKit layer (signatures match Packages/HangyeolKit header)           */
@@ -162,6 +187,39 @@ hg_status hg_delete_range(
     uint32_t paragraph,
     uint32_t char_offset,
     uint32_t count
+);
+
+/**
+ * List tables (DocumentCore IR walk — no ZIP/XML parser).
+ *
+ * Writes min(capacity, table count) entries into `out_tables`.
+ * On HG_OK, *out_count is the total table count (may exceed capacity).
+ * Pass capacity 0 / out_tables NULL to query the count only.
+ *
+ * Kit: use `index` + `rows`/`cols` to address cells via hg_set_cell_text.
+ */
+hg_status hg_list_tables(
+    hg_engine *engine,
+    hg_table_info *out_tables,
+    size_t capacity,
+    size_t *out_count
+);
+
+/**
+ * Set cell plain text at (table, row, col).
+ *
+ * `table` is `hg_table_info.index` from hg_list_tables.
+ * Replaces that cell's plain text (first paragraph; extra cell paragraphs
+ * cleared). Merged cells: any covered (row, col) hits the anchor cell.
+ *
+ * Kit: TableBlock cell edit. Invalid table/row/col → HG_CORRUPT / CORRUPT.
+ */
+hg_status hg_set_cell_text(
+    hg_engine *engine,
+    uint32_t table,
+    uint32_t row,
+    uint32_t col,
+    const char *text
 );
 
 /**
