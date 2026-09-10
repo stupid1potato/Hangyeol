@@ -5,6 +5,10 @@ import HangyeolKit
 /// Re-exported so document/session APIs do not duplicate HangyeolKit.TableInfo.
 typealias TableInfo = HangyeolKit.TableInfo
 
+/// Kit picture addressing (`index` / location / size / format meta).
+/// Re-exported so document/session APIs do not duplicate HangyeolKit.ImageInfo.
+typealias ImageInfo = HangyeolKit.ImageInfo
+
 /// App-side adapter: Kit `RealEngine` (live `hg_engine*` / DocumentCore IR)
 /// → app `HangyeolEngine` / `DocumentModel` (blocks / paragraphs).
 ///
@@ -74,6 +78,15 @@ final class KitRealEngine: HangyeolLiveSession, @unchecked Sendable {
     func listTables() throws -> [TableInfo] {
         do {
             return try kit.listTables()
+        } catch {
+            throw Self.mapError(error)
+        }
+    }
+
+    /// Freeze `hg_list_images` on the open session (IR meta only, not BinData extract).
+    func listImages() throws -> [ImageInfo] {
+        do {
+            return try kit.listImages()
         } catch {
             throw Self.mapError(error)
         }

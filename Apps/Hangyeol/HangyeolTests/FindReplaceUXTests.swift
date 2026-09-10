@@ -36,6 +36,8 @@ private final class RecordingLiveEngine: HangyeolLiveSession, @unchecked Sendabl
 
     func listTables() throws -> [TableInfo] { [] }
 
+    func listImages() throws -> [ImageInfo] { [] }
+
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
         _ = table
         _ = row

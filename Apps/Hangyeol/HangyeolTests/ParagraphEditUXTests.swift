@@ -42,6 +42,8 @@ private final class ParagraphRecordingEngine: HangyeolLiveSession, @unchecked Se
         listedTables
     }
 
+    func listImages() throws -> [ImageInfo] { [] }
+
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
         _ = table
         _ = row

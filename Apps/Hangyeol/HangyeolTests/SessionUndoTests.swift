@@ -68,6 +68,8 @@ private final class SnapshotLiveEngine: HangyeolLiveSession, @unchecked Sendable
 
     func listTables() throws -> [TableInfo] { [] }
 
+    func listImages() throws -> [ImageInfo] { [] }
+
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
         try failIfNeeded()
         setCellCalls.append((table, row, col, text))
@@ -169,6 +171,8 @@ private final class DefaultPeekLiveEngine: HangyeolLiveSession, @unchecked Senda
     }
 
     func listTables() throws -> [TableInfo] { [] }
+
+    func listImages() throws -> [ImageInfo] { [] }
 
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
         _ = table

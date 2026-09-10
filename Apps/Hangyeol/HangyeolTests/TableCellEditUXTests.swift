@@ -40,6 +40,8 @@ private final class CellRecordingEngine: HangyeolLiveSession, @unchecked Sendabl
         listedTables
     }
 
+    func listImages() throws -> [ImageInfo] { [] }
+
     func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
         if let setCellError {
             throw setCellError

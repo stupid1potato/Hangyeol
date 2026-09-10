@@ -78,6 +78,12 @@ struct HangyeolDocument: FileDocument {
         try session.listTables()
     }
 
+    /// Kit `listImages` on **this** document's live session (`ImageInfo` IR meta).
+    /// Read-only: does not refresh the display model or mark unsaved edits.
+    func listImages() throws -> [ImageInfo] {
+        try session.listImages()
+    }
+
     /// Apply Kit `setCellText` on **this** document's live session and refresh the display model.
     /// Successful live edits register on the window `UndoManager` automatically.
     mutating func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
