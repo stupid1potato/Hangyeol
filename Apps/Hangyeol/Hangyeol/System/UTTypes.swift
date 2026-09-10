@@ -10,45 +10,44 @@ extension UTType {
         UTType(exportedAs: "org.hangyeol.hwp")
     }
 
-    /// 필수 최소셋: Mac에서 `UTType(filenameExtension:)` 가 HOP.app export 로 해석한 식별자.
-    /// `net.golbin.hop.hwpx` desc = Hangul Word Processor XML document.
+    /// Info.plist `UTImportedTypeDeclarations` / `LSItemContentTypes` HWPX.
+    /// 필수 최소셋은 `net.golbin.hop.hwpx` (Mac에서 `.hwpx` 확장자 바인딩).
     static let hangyeolImportedHwpxIdentifiers: [String] = [
         "net.golbin.hop.hwpx",
         "com.haansoft.HancomOfficeViewer.mac.hwpx",
     ]
 
-    /// 필수 최소셋 `net.golbin.hop.hwp`. Polaris는 Mac에서 lookup 됨.
-    /// `com.hancom.*` / `com.haansoft.*` 는 한컴 미설치 Mac에서 MISSING — import는 무해.
+    /// Info.plist imported HWP. 필수 최소셋 `net.golbin.hop.hwp`. Polaris는 lookup 유지.
     static let hangyeolImportedHwpIdentifiers: [String] = [
         "net.golbin.hop.hwp",
         "com.infraware.polarisofficeservice.hwp",
         "com.haansoft.HancomOfficeViewer.mac.hwp",
     ]
 
-    /// Info.plist `UTImportedTypeDeclarations` 와 동일 소스.
+    /// Info.plist imported 전체. haansoft는 plist에만 두고 readable 테스트는 stable 셋을 본다.
     static var hangyeolImportedTypeIdentifiers: [String] {
         hangyeolImportedHwpxIdentifiers + hangyeolImportedHwpIdentifiers
     }
 
-    /// DocumentGroup이 받아야 하는 선언 식별자 (export + import). 확장자 바인딩은 런타임 추가.
-    static var hangyeolDeclaredReadableIdentifiers: [String] {
-        var ids = [hangyeolHwpx.identifier, hangyeolHwp.identifier]
-        var seen = Set(ids)
-        for id in hangyeolImportedTypeIdentifiers where seen.insert(id).inserted {
-            ids.append(id)
-        }
-        return ids
-    }
+    /// `UTType(id)` / `importedAs` 가 원본 문자열을 보존하는 경쟁 UTI (GUI 성공 최소셋).
+    /// haansoft는 `importedAs` 가 HOP로 흡수되고, `UTType(id)` 는 소문자화된다.
+    static let hangyeolStableImportedIdentifiers: [String] = [
+        "net.golbin.hop.hwpx",
+        "net.golbin.hop.hwp",
+        "com.infraware.polarisofficeservice.hwp",
+    ]
 
     /// DocumentGroup / NSOpenPanel에 넘기는 한결 문서 UTI.
-    /// `org.hangyeol.*` 가 기본. import 식별자는 한컴 미설치여도 항상 포함한다.
     static var hangyeolReadableTypes: [UTType] {
         var types: [UTType] = []
         var seen = Set<String>()
-        for identifier in hangyeolDeclaredReadableIdentifiers {
-            let type = declaredImportedType(identifier)
-            guard seen.insert(identifier).inserted else { continue }
-            types.append(type)
+        let declared = [hangyeolHwpx.identifier, hangyeolHwp.identifier]
+            + hangyeolImportedTypeIdentifiers
+        for identifier in declared {
+            let type = resolvedReadableType(for: identifier)
+            if seen.insert(type.identifier).inserted {
+                types.append(type)
+            }
         }
         appendExtensionBoundTypes(for: "hwpx", into: &types, seen: &seen)
         appendExtensionBoundTypes(for: "hwp", into: &types, seen: &seen)
@@ -56,7 +55,6 @@ extension UTType {
     }
 
     /// DocumentGroup/NSDocument가 넘긴 content type → 엔진 파일 종류.
-    /// 경쟁 UTI·확장자 바인딩도 `.hwpx`/`.hwp` 로 매핑해 열기가 막히지 않게 한다.
     static func hangyeolFileType(from contentType: UTType) -> DocumentFileType {
         if hangyeolType(contentType, matchesExtension: "hwp") {
             return .hwp
@@ -73,32 +71,20 @@ extension UTType {
         }
     }
 
-    /// Lookup이 HOP 등으로 합쳐지거나 nil이어도, 요청한 identifier를 가진 UTType을 만든다.
-    static func declaredImportedType(_ identifier: String) -> UTType {
+    static func hangyeolImportedIdentifier(_ identifier: String, matches candidates: [String]) -> Bool {
+        candidates.contains { $0.caseInsensitiveCompare(identifier) == .orderedSame }
+    }
+
+    /// `UTType(id)` 를 먼저 쓴다. nil이면 `importedAs`.
+    /// haansoft `importedAs` 는 확장자 태그로 HOP에 흡수된다.
+    static func resolvedReadableType(for identifier: String) -> UTType {
         if identifier == hangyeolHwpx.identifier {
             return .hangyeolHwpx
         }
         if identifier == hangyeolHwp.identifier {
             return .hangyeolHwp
         }
-        if let known = UTType(identifier), known.identifier == identifier {
-            return known
-        }
-        let withSupertype = UTType(importedAs: identifier, conformingTo: .data)
-        if withSupertype.identifier == identifier {
-            return withSupertype
-        }
-        let imported = UTType(importedAs: identifier)
-        if imported.identifier == identifier {
-            return imported
-        }
-        if let decoded = try? JSONDecoder().decode(
-            UTType.self,
-            from: Data("\"\(identifier)\"".utf8)
-        ), decoded.identifier == identifier {
-            return decoded
-        }
-        return withSupertype
+        return UTType(identifier) ?? UTType(importedAs: identifier)
     }
 
     private static func hangyeolType(_ type: UTType, matchesExtension ext: String) -> Bool {
@@ -106,7 +92,7 @@ extension UTType {
             ? hangyeolImportedHwpIdentifiers
             : hangyeolImportedHwpxIdentifiers
         let hangyeolID = ext == "hwp" ? hangyeolHwp.identifier : hangyeolHwpx.identifier
-        if type.identifier == hangyeolID || imported.contains(type.identifier) {
+        if type.identifier == hangyeolID || hangyeolImportedIdentifier(type.identifier, matches: imported) {
             return true
         }
         if ext == "hwp", type.conforms(to: .hangyeolHwp) {

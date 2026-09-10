@@ -19,9 +19,15 @@ enum DocumentFileType: String, Codable, Sendable, CaseIterable {
         case "org.hangyeol.hwp":
             self = .hwp
         default:
-            if UTType.hangyeolImportedHwpxIdentifiers.contains(typeIdentifier) {
+            if UTType.hangyeolImportedIdentifier(
+                typeIdentifier,
+                matches: UTType.hangyeolImportedHwpxIdentifiers
+            ) {
                 self = .hwpx
-            } else if UTType.hangyeolImportedHwpIdentifiers.contains(typeIdentifier) {
+            } else if UTType.hangyeolImportedIdentifier(
+                typeIdentifier,
+                matches: UTType.hangyeolImportedHwpIdentifiers
+            ) {
                 self = .hwp
             } else {
                 return nil

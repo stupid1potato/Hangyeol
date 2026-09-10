@@ -20,6 +20,14 @@ final class FileOpeningTests: XCTestCase {
         XCTAssertTrue(identifiers.contains("com.infraware.polarisofficeservice.hwp"))
         XCTAssertEqual(UTType.hangyeolImportedHwpxIdentifiers.first, "net.golbin.hop.hwpx")
         XCTAssertEqual(UTType.hangyeolImportedHwpIdentifiers.first, "net.golbin.hop.hwp")
+        XCTAssertEqual(
+            UTType.hangyeolStableImportedIdentifiers,
+            [
+                "net.golbin.hop.hwpx",
+                "net.golbin.hop.hwp",
+                "com.infraware.polarisofficeservice.hwp",
+            ]
+        )
         if let boundHwpx = UTType(filenameExtension: "hwpx") {
             XCTAssertTrue(identifiers.contains(boundHwpx.identifier))
         }
@@ -151,13 +159,10 @@ final class FileOpeningTests: XCTestCase {
         let readable = UTType.hangyeolReadableTypes.map(\.identifier)
         XCTAssertEqual(readable.first, UTType.hangyeolHwpx.identifier)
         XCTAssertTrue(readable.contains(UTType.hangyeolHwp.identifier))
-        XCTAssertTrue(readable.contains("net.golbin.hop.hwpx"))
-        XCTAssertTrue(readable.contains("net.golbin.hop.hwp"))
-        for imported in UTType.hangyeolImportedTypeIdentifiers {
-            XCTAssertEqual(UTType.declaredImportedType(imported).identifier, imported)
+        for stable in UTType.hangyeolStableImportedIdentifiers {
             XCTAssertTrue(
-                readable.contains(imported),
-                "hangyeolReadableTypes missing \(imported)"
+                readable.contains(stable),
+                "hangyeolReadableTypes missing stable imported \(stable)"
             )
         }
 

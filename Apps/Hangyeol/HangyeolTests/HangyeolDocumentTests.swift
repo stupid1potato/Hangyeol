@@ -14,19 +14,10 @@ final class HangyeolDocumentTests: XCTestCase {
         XCTAssertEqual(identifiers.first, UTType.hangyeolHwpx.identifier)
         XCTAssertTrue(identifiers.contains(UTType.hangyeolHwpx.identifier))
         XCTAssertTrue(identifiers.contains(UTType.hangyeolHwp.identifier))
-        XCTAssertEqual(
-            Array(identifiers.prefix(UTType.hangyeolDeclaredReadableIdentifiers.count)),
-            UTType.hangyeolDeclaredReadableIdentifiers
-        )
-        for imported in UTType.hangyeolImportedTypeIdentifiers {
-            XCTAssertEqual(
-                UTType.declaredImportedType(imported).identifier,
-                imported,
-                "한컴 미설치여도 imported 식별자를 HOP UTI로 합치지 않는다"
-            )
+        for stable in UTType.hangyeolStableImportedIdentifiers {
             XCTAssertTrue(
-                identifiers.contains(imported),
-                "readableContentTypes missing imported \(imported)"
+                identifiers.contains(stable),
+                "readableContentTypes missing stable imported \(stable)"
             )
         }
     }
@@ -82,17 +73,25 @@ final class HangyeolDocumentTests: XCTestCase {
         XCTAssertEqual(HangyeolDocument.fileType(from: .hangyeolHwpx), .hwpx)
         XCTAssertEqual(HangyeolDocument.fileType(from: .hangyeolHwp), .hwp)
         XCTAssertEqual(
-            HangyeolDocument.fileType(from: UTType(importedAs: "com.infraware.polarisofficeservice.hwp")),
-            .hwp
-        )
-        XCTAssertEqual(
-            HangyeolDocument.fileType(from: UTType(importedAs: "com.haansoft.HancomOfficeViewer.mac.hwpx")),
+            HangyeolDocument.fileType(from: UTType.resolvedReadableType(for: "net.golbin.hop.hwpx")),
             .hwpx
         )
         XCTAssertEqual(
-            HangyeolDocument.fileType(from: UTType(importedAs: "com.haansoft.HancomOfficeViewer.mac.hwp")),
+            HangyeolDocument.fileType(from: UTType.resolvedReadableType(for: "net.golbin.hop.hwp")),
             .hwp
         )
+        XCTAssertEqual(
+            HangyeolDocument.fileType(
+                from: UTType.resolvedReadableType(for: "com.infraware.polarisofficeservice.hwp")
+            ),
+            .hwp
+        )
+        if let haansoftHwpx = UTType("com.haansoft.HancomOfficeViewer.mac.hwpx") {
+            XCTAssertEqual(HangyeolDocument.fileType(from: haansoftHwpx), .hwpx)
+        }
+        if let haansoftHwp = UTType("com.haansoft.HancomOfficeViewer.mac.hwp") {
+            XCTAssertEqual(HangyeolDocument.fileType(from: haansoftHwp), .hwp)
+        }
     }
 
     func testEngineClientResetToMockStillOpensSample() throws {

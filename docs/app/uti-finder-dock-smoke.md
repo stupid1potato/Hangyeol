@@ -44,7 +44,8 @@ Mac에서 확인한 확장자 바인딩 (HOP 설치, 한컴 미설치):
 
 `DocumentFileType.typeIdentifier` 는 계속 `org.hangyeol.hwpx` / `org.hangyeol.hwp`. 타사 식별자는 `init?(typeIdentifier:)` · `HangyeolDocument.fileType(from:)` 가 `.hwpx` / `.hwp` 로 매핑한다.
 
-`UTType.hangyeolReadableTypes` 는 `hangyeolDeclaredReadableIdentifiers`(export + import 상수, Info.plist와 동일 소스)를 `declaredImportedType`으로 만들고, 그 뒤에 `UTType(filenameExtension:)` 바인딩을 붙인다. 한컴 미설치 Mac에서 `importedAs`가 HOP UTI로 합쳐져도 선언 식별자를 버리지 않는다. `HangyeolDocument.readableContentTypes` 와 같다.  
+`UTType.hangyeolReadableTypes` 는 `org.hangyeol.*` + plist imported를 `UTType(id) ?? UTType(importedAs:)` 로 넣고, `.hwpx`/`.hwp` 확장자 바인딩을 붙인다.  
+`importedAs` 가 haansoft를 HOP UTI로 흡수하므로, Swift 테스트가 원본 문자열을 요구하는 대상은 **보존되는 ID만**: `net.golbin.hop.hwpx` / `net.golbin.hop.hwp` / `com.infraware.polarisofficeservice.hwp`. haansoft는 Info.plist imported + `LSItemContentTypes` 에 둔다. `HangyeolDocument.readableContentTypes` 와 같다.  
 쓰기 타입은 HWPX만 (`writableContentTypes` == `[.hangyeolHwpx]`). HWP 디스크 저장은 엔진 `SAVE_REJECTED` → `HangyeolError.saveRejected` (PR #31). Finder 핸들러는 **Owner + Editor** 로 둔다 (열기·기본 앱 순위, org.hangyeol 문서 타입).
 
 ### Info.plist 키
