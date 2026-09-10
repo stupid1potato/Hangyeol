@@ -10,16 +10,18 @@ extension UTType {
         UTType(exportedAs: "org.hangyeol.hwp")
     }
 
-    /// HWPX 타사 UTI (`UTImportedTypeDeclarations` / `LSItemContentTypes`).
-    /// HOP가 `.hwpx` 확장자를 소유할 때 DocumentGroup이 거절하지 않게 한다.
+    /// 필수 최소셋: Mac에서 `UTType(filenameExtension:)` 가 HOP.app export 로 해석한 식별자.
+    /// `net.golbin.hop.hwpx` desc = Hangul Word Processor XML document.
     static let hangyeolImportedHwpxIdentifiers: [String] = [
         "net.golbin.hop.hwpx",
         "com.haansoft.HancomOfficeViewer.mac.hwpx",
     ]
 
-    /// HWP 타사 UTI. Polaris 등 미확인 식별자는 런타임 확장자 바인딩으로 보완.
+    /// 필수 최소셋 `net.golbin.hop.hwp`. Polaris는 Mac에서 lookup 됨.
+    /// `com.hancom.*` / `com.haansoft.*` 는 한컴 미설치 Mac에서 MISSING — import는 무해.
     static let hangyeolImportedHwpIdentifiers: [String] = [
         "net.golbin.hop.hwp",
+        "com.infraware.polarisofficeservice.hwp",
         "com.haansoft.HancomOfficeViewer.mac.hwp",
     ]
 

@@ -35,6 +35,7 @@
 			<array>
 				<string>org.hangyeol.hwp</string>
 				<string>net.golbin.hop.hwp</string>
+				<string>com.infraware.polarisofficeservice.hwp</string>
 				<string>com.haansoft.HancomOfficeViewer.mac.hwp</string>
 			</array>
 			<key>CFBundleTypeExtensions</key>
@@ -135,6 +136,24 @@
 		<dict>
 			<key>UTTypeIdentifier</key>
 			<string>net.golbin.hop.hwp</string>
+			<key>UTTypeDescription</key>
+			<string>HWP 문서</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>hwp</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.infraware.polarisofficeservice.hwp</string>
 			<key>UTTypeDescription</key>
 			<string>HWP 문서</string>
 			<key>UTTypeConformsTo</key>

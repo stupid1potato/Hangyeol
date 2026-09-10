@@ -70,6 +70,10 @@ final class HangyeolDocumentTests: XCTestCase {
         XCTAssertEqual(HangyeolDocument.fileType(from: .hangyeolHwpx), .hwpx)
         XCTAssertEqual(HangyeolDocument.fileType(from: .hangyeolHwp), .hwp)
         XCTAssertEqual(
+            HangyeolDocument.fileType(from: UTType(importedAs: "com.infraware.polarisofficeservice.hwp")),
+            .hwp
+        )
+        XCTAssertEqual(
             HangyeolDocument.fileType(from: UTType(importedAs: "com.haansoft.HancomOfficeViewer.mac.hwpx")),
             .hwpx
         )

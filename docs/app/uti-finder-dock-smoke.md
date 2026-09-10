@@ -23,14 +23,24 @@ Views · Sheets · L10n 카피 재디자인, known-limitations, XCFramework, eng
 한결이 **소유(Owner)** 하는 UTI는 `org.hangyeol.*` 뿐이다 (`UTExportedTypeDeclarations`).  
 한컴·HOP 등 타사 HWP/HWPX UTI는 `UTImportedTypeDeclarations`로 **Viewer/Editor import가 필수**다. 한컴 상표·아이콘 에셋은 번들하지 않는다. (PR #34 당시 “한컴 UTI import 금지”는 **철회**.)
 
+Mac에서 확인한 확장자 바인딩 (HOP 설치, 한컴 미설치):
+
+- `UTType(filenameExtension: "hwpx")` = `net.golbin.hop.hwpx` (Hangul Word Processor XML document) — **필수 최소셋**
+- `UTType(filenameExtension: "hwp")` = `net.golbin.hop.hwp` (Hangul Word Processor document) — **필수 최소셋**
+- `com.infraware.polarisofficeservice.hwp` 존재 (Polaris, `.hwp`)
+- `com.hancom.hwpx` / `com.hancom.hwp` / `com.haansoft.*` 는 이 Mac에서 lookup **MISSING**. imported에 넣어도 해롭지 않음.
+
+한/글에서 만든 파일(예: Downloads `[양식1] 2026년도 TU-VCC 5기 기술트랙 사업계획서_하베스트랩.hwpx`)도 NSDocument가 HOP UTI 설명으로 거절한 그 케이스다.
+
 | UTI | 역할 | 확장자 | Swift |
 |-----|------|--------|-------|
 | `org.hangyeol.hwpx` | **Owner** (export) | `hwpx` | `UTType.hangyeolHwpx` (`exportedAs:`) |
 | `org.hangyeol.hwp` | **Owner** (export) | `hwp` | `UTType.hangyeolHwp` (`exportedAs:`) |
-| `net.golbin.hop.hwpx` | import (HOP, Mac에서 `.hwpx` 확장자 바인딩) | `hwpx` | `hangyeolImportedHwpxIdentifiers` |
-| `com.haansoft.HancomOfficeViewer.mac.hwpx` | import (한컴 Mac 뷰어) | `hwpx` | 동일 |
-| `net.golbin.hop.hwp` | import (HOP) | `hwp` | `hangyeolImportedHwpIdentifiers` |
-| `com.haansoft.HancomOfficeViewer.mac.hwp` | import (한컴 Mac 뷰어) | `hwp` | 동일 |
+| `net.golbin.hop.hwpx` | import (**필수**, HOP `.hwpx` 바인딩) | `hwpx` | `hangyeolImportedHwpxIdentifiers` |
+| `net.golbin.hop.hwp` | import (**필수**, HOP `.hwp` 바인딩) | `hwp` | `hangyeolImportedHwpIdentifiers` |
+| `com.infraware.polarisofficeservice.hwp` | import (Polaris, Mac lookup) | `hwp` | 동일 |
+| `com.haansoft.HancomOfficeViewer.mac.hwpx` | import (한컴 뷰어, 미설치 Mac에선 MISSING) | `hwpx` | 동일 |
+| `com.haansoft.HancomOfficeViewer.mac.hwp` | import (한컴 뷰어, 미설치 Mac에선 MISSING) | `hwp` | 동일 |
 
 `DocumentFileType.typeIdentifier` 는 계속 `org.hangyeol.hwpx` / `org.hangyeol.hwp`. 타사 식별자는 `init?(typeIdentifier:)` · `HangyeolDocument.fileType(from:)` 가 `.hwpx` / `.hwp` 로 매핑한다.
 
@@ -76,7 +86,9 @@ HOP가 `UTType(filenameExtension: "hwpx")` 를 `net.golbin.hop.hwpx` (localizedD
 
 > 문서 'hub-A.hwpx'을(를) 열 수 없습니다. 한결은(는) 'Hangul Word Processor XML document' 포맷인 파일을 열 수 없습니다.
 
-같은 위험이 `.hwp` (Polaris 등)에도 있다. Spotlight/`mdls` 가 `org.hangyeol.hwpx` 를 보여도 NSDocument는 확장자→UTI 를 쓴다.
+같은 거절이 한/글에서 만든 Downloads `[양식1] 2026년도 TU-VCC 5기 기술트랙 사업계획서_하베스트랩.hwpx` 에서도 났다. Spotlight/`mdls` 가 `org.hangyeol.hwpx` 를 보여도 NSDocument는 확장자→UTI 를 쓴다. `.hwp` 는 HOP(`net.golbin.hop.hwp`)와 Polaris(`com.infraware.polarisofficeservice.hwp`).
+
+필수 최소셋: imported + `LSItemContentTypes` + `hangyeolReadableTypes` 에 `net.golbin.hop.hwpx` / `net.golbin.hop.hwp` + `fileType` 매핑. Owner는 `org.hangyeol.*`.
 
 필수:
 

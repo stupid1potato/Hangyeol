@@ -17,8 +17,9 @@ final class FileOpeningTests: XCTestCase {
         XCTAssertTrue(identifiers.contains(UTType.hangyeolHwp.identifier))
         XCTAssertTrue(identifiers.contains("net.golbin.hop.hwpx"))
         XCTAssertTrue(identifiers.contains("net.golbin.hop.hwp"))
-        XCTAssertTrue(identifiers.contains("com.haansoft.HancomOfficeViewer.mac.hwpx"))
-        XCTAssertTrue(identifiers.contains("com.haansoft.HancomOfficeViewer.mac.hwp"))
+        XCTAssertTrue(identifiers.contains("com.infraware.polarisofficeservice.hwp"))
+        XCTAssertEqual(UTType.hangyeolImportedHwpxIdentifiers.first, "net.golbin.hop.hwpx")
+        XCTAssertEqual(UTType.hangyeolImportedHwpIdentifiers.first, "net.golbin.hop.hwp")
         if let boundHwpx = UTType(filenameExtension: "hwpx") {
             XCTAssertTrue(identifiers.contains(boundHwpx.identifier))
         }
