@@ -55,6 +55,20 @@ final class EngineClientTests: XCTestCase {
         }
     }
 
+    func testListTablesAndSetCellTextOnMockThrowNotYetImplemented() {
+        EngineClient.resetToMock()
+        XCTAssertThrowsError(try EngineClient.listTables()) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertThrowsError(try EngineClient.setCellText(table: 0, row: 0, col: 0, text: "x")) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+    }
+
     func testMakeEngineReturnsIndependentInstances() {
         EngineClient.resetToMock()
         let first = EngineClient.makeEngine()

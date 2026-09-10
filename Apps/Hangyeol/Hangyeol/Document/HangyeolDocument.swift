@@ -8,7 +8,7 @@ struct HangyeolDocument: FileDocument {
     var model: DocumentModel
     /// Shared across FileDocument copies of this window; not `EngineClient.current`.
     var session: DocumentSession
-    /// Set when the display model changes via engine replace. Frontend / NSDocument dirty UX.
+    /// Set when the display model changes via engine replace or cell edit.
     var hasUnsavedEdits: Bool
 
     init(model: DocumentModel = .empty, session: DocumentSession? = nil) {
@@ -61,6 +61,21 @@ struct HangyeolDocument: FileDocument {
         )
         hasUnsavedEdits = true
         return count
+    }
+
+    /// Kit `listTables` on **this** document's live session (`TableInfo.index` for `setCellText`).
+    func listTables() throws -> [TableInfo] {
+        try session.listTables()
+    }
+
+    /// Apply Kit `setCellText` on **this** document's live session and refresh the display model.
+    mutating func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
+        try session.setCellText(table: table, row: row, col: col, text: text)
+        model = try session.displayModel(
+            type: model.metadata.sourceType,
+            title: model.metadata.title
+        )
+        hasUnsavedEdits = true
     }
 
     private static func fileType(from contentType: UTType) -> DocumentFileType {

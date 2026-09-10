@@ -1,6 +1,10 @@
 import Foundation
 import HangyeolKit
 
+/// Kit table addressing (`index` / `section` / `paragraph` / `control` / `rows` / `cols`).
+/// Re-exported so document/session APIs do not duplicate HangyeolKit.TableInfo.
+typealias TableInfo = HangyeolKit.TableInfo
+
 /// App-side adapter: Kit `RealEngine` (live `hg_engine*` / DocumentCore IR)
 /// → app `HangyeolEngine` / `DocumentModel` (blocks / paragraphs).
 ///
@@ -61,6 +65,24 @@ final class KitRealEngine: HangyeolLiveSession, @unchecked Sendable {
     func saveHwpx(to path: String) throws {
         do {
             try kit.saveHwpx(to: path)
+        } catch {
+            throw Self.mapError(error)
+        }
+    }
+
+    /// Freeze `hg_list_tables` on the open session.
+    func listTables() throws -> [TableInfo] {
+        do {
+            return try kit.listTables()
+        } catch {
+            throw Self.mapError(error)
+        }
+    }
+
+    /// Freeze `hg_set_cell_text` at (`table`, `row`, `col`). `table` is `TableInfo.index`.
+    func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
+        do {
+            try kit.setCellText(table: table, row: row, col: col, text: text)
         } catch {
             throw Self.mapError(error)
         }

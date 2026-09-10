@@ -24,6 +24,8 @@ private final class TaggedEngine: HangyeolEngine, @unchecked Sendable {
 private final class FakeLiveEngine: HangyeolLiveSession, @unchecked Sendable {
     var isOpen: Bool = true
     var replaceCount = 0
+    var listedTables: [TableInfo] = []
+    var setCellCalls: [(UInt32, UInt32, UInt32, String)] = []
 
     func open(data: Data, type: DocumentFileType) throws -> DocumentModel {
         DocumentModel(
@@ -52,6 +54,14 @@ private final class FakeLiveEngine: HangyeolLiveSession, @unchecked Sendable {
 
     func saveHwpx(to path: String) throws {
         try Data("live-hwpx".utf8).write(to: URL(fileURLWithPath: path))
+    }
+
+    func listTables() throws -> [TableInfo] {
+        listedTables
+    }
+
+    func setCellText(table: UInt32, row: UInt32, col: UInt32, text: String) throws {
+        setCellCalls.append((table, row, col, text))
     }
 }
 
@@ -163,6 +173,88 @@ final class DocumentSessionTests: XCTestCase {
         XCTAssertTrue(document.hasUnsavedEdits)
         XCTAssertEqual(document.model.plainText, "replaced")
         XCTAssertEqual(document.model.metadata.title, "제목")
+    }
+
+    func testSetCellTextMarksDocumentDirtyOnBoundSession() throws {
+        let live = FakeLiveEngine()
+        live.listedTables = [
+            TableInfo(index: 0, section: 0, paragraph: 1, control: 0, rows: 2, cols: 3)
+        ]
+        var document = HangyeolDocument(
+            model: DocumentModel(
+                metadata: DocumentMetadata(title: "제목", sourceType: .hwpx),
+                blocks: [.paragraph(ParagraphBlock(text: "원본"))]
+            ),
+            session: DocumentSession(engine: live)
+        )
+        XCTAssertFalse(document.hasUnsavedEdits)
+        XCTAssertTrue(document.session.canEditCells)
+
+        let tables = try document.listTables()
+        XCTAssertEqual(tables.count, 1)
+        XCTAssertEqual(tables[0].index, 0)
+        XCTAssertEqual(tables[0].section, 0)
+        XCTAssertEqual(tables[0].paragraph, 1)
+        XCTAssertEqual(tables[0].control, 0)
+        XCTAssertEqual(tables[0].rows, 2)
+        XCTAssertEqual(tables[0].cols, 3)
+        XCTAssertFalse(document.hasUnsavedEdits)
+
+        try document.setCellText(table: 0, row: 0, col: 1, text: "새")
+        XCTAssertEqual(live.setCellCalls.count, 1)
+        XCTAssertEqual(live.setCellCalls[0].0, 0)
+        XCTAssertEqual(live.setCellCalls[0].1, 0)
+        XCTAssertEqual(live.setCellCalls[0].2, 1)
+        XCTAssertEqual(live.setCellCalls[0].3, "새")
+        XCTAssertTrue(document.hasUnsavedEdits)
+        XCTAssertEqual(document.model.plainText, "replaced")
+        XCTAssertEqual(document.model.metadata.title, "제목")
+    }
+
+    func testCellApisOnMockThrowNotYetImplemented() {
+        let session = DocumentSession(engine: MockEngine())
+        XCTAssertFalse(session.canEditCells)
+        XCTAssertThrowsError(try session.listTables()) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertThrowsError(try session.setCellText(table: 0, row: 0, col: 0, text: "x")) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+
+        var document = HangyeolDocument(model: MockEngine.sampleDocument(), session: session)
+        XCTAssertThrowsError(try document.listTables()) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertThrowsError(try document.setCellText(table: 0, row: 0, col: 0, text: "x")) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertFalse(document.hasUnsavedEdits)
+    }
+
+    func testCellApisOnClosedLiveSessionThrow() {
+        let live = FakeLiveEngine()
+        live.isOpen = false
+        let session = DocumentSession(engine: live)
+        XCTAssertFalse(session.canEditCells)
+        XCTAssertThrowsError(try session.listTables()) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertThrowsError(try session.setCellText(table: 0, row: 0, col: 0, text: "x")) { error in
+            guard case HangyeolError.notYetImplemented = error else {
+                return XCTFail("expected notYetImplemented, got \(error)")
+            }
+        }
+        XCTAssertTrue(live.setCellCalls.isEmpty)
     }
 
     func testOpenLiveSaveDoesNotReencodeAsTaggedJSON() throws {
