@@ -1,5 +1,5 @@
 //! Hangyeol DocumentCore FFI gates: hub-A replace/insert/delete/table+clear,
-//! hub-B image list, F14, F16.
+//! hub-B image list + keep-on-save, F14, F16.
 
 use hangyeol_engine::{
     hg_close, hg_delete_range, hg_engine, hg_free_buffer, hg_insert_text, hg_last_error,
@@ -487,102 +487,119 @@ fn open_hub_b() -> (*mut hg_engine, Vec<u8>) {
     (engine, bytes)
 }
 
+fn assert_image_meta_valid(infos: &[HgImageInfo]) {
+    assert!(
+        !infos.is_empty(),
+        "hub-B SimplePicture must list ≥1 image, got {}",
+        infos.len()
+    );
+    let img = &infos[0];
+    assert_eq!(img.index, 0);
+    assert!(
+        img.width > 0 && img.height > 0,
+        "size meta width={} height={}",
+        img.width,
+        img.height
+    );
+    let fmt = img.format_str();
+    assert!(
+        matches!(fmt, "jpg" | "jpeg" | "png" | "gif" | "bmp"),
+        "format meta {fmt:?}"
+    );
+    assert!(
+        img.bin_data_id > 0 || !img.href_str().is_empty(),
+        "Kit addressing needs bin_data_id or href"
+    );
+}
+
 /// Product gate: hub-B list returns ≥1 image with size/format meta Kit can use.
 #[test]
 fn hub_b_list_images_has_meta() {
     unsafe {
         let (engine, _) = open_hub_b();
-        let mut count = 0usize;
-        let status = hg_list_images(engine, ptr::null_mut(), 0, &mut count);
-        assert_eq!(status, HgStatus::Ok, "{:?}", last_error_str());
-        assert!(
-            count >= 1,
-            "hub-B SimplePicture must list ≥1 image, got {count}"
-        );
-
-        let mut infos = vec![HgImageInfo::zeroed(); count.max(1)];
-        let status = hg_list_images(engine, infos.as_mut_ptr(), infos.len(), &mut count);
-        assert_eq!(status, HgStatus::Ok, "{:?}", last_error_str());
-        assert!(count >= 1);
-        let img = &infos[0];
-        assert_eq!(img.index, 0);
-        assert!(
-            img.width > 0 && img.height > 0,
-            "size meta width={} height={}",
-            img.width,
-            img.height
-        );
-        let fmt = img.format_str();
-        assert!(
-            matches!(fmt, "jpg" | "jpeg" | "png" | "gif" | "bmp"),
-            "format meta {fmt:?}"
-        );
-        assert!(
-            img.bin_data_id > 0 || !img.href_str().is_empty(),
-            "Kit addressing needs bin_data_id or href"
-        );
+        let infos = list_images(engine);
+        assert_image_meta_valid(&infos);
         hg_close(engine);
     }
 }
 
-/// Measurement (not a keep-on-save product gate): hub-B open → plain_text
-/// (no-op edit) → `hg_save_hwpx` clear-before-save → reopen. Reports whether
-/// ZIP `BinData/` binary + count survive. Week-6 approval required to productize.
+/// Product gate: hub-B keep-on-save. Open SimplePicture → DocumentCore FFI
+/// text edit (`hg_insert_text`) → `hg_save_hwpx` clear-before-save → reopen.
+/// ZIP `BinData/` file count + bytes preserved; `hg_list_images` count/meta
+/// still valid; `hp:linesegarray` is 0. Existing DocumentCore export — not a
+/// ZIP-fallback writer, extract API, or renderer.
 #[test]
-fn hub_b_image_clear_before_save_roundtrip_measurement() {
+fn hub_b_image_keep_on_save_clear_before_save_roundtrip() {
     unsafe {
         let (engine, original) = open_hub_b();
         let before = list_images(engine);
-        assert!(
-            !before.is_empty(),
-            "measurement needs ≥1 listed image on open"
-        );
+        assert_image_meta_valid(&before);
         let original_bins = zip_bindata_entries(&original);
         assert!(
             !original_bins.is_empty(),
             "hub-B fixture must contain BinData/"
         );
 
-        // Optional no-op: exercise plain_text only. No image-keep experiment.
-        let _ = plain_text(engine);
+        let token = CString::new("HGIMG99").unwrap();
+        let status = hg_insert_text(engine, 0, 0, 0, token.as_ptr());
+        assert_eq!(status, HgStatus::Ok, "insert {:?}", last_error_str());
+        let before_save = plain_text(engine);
+        assert!(
+            before_save.contains("HGIMG99"),
+            "inserted token before save, got {before_save:?}"
+        );
 
         let saved = save_cleared(engine);
-        let artifact = save_hwpx_cleared(engine, "SimplePicture-cleared.hwpx");
+        let artifact = save_hwpx_cleared(engine, "SimplePicture-keep-on-save.hwpx");
         hg_close(engine);
 
         let disk = std::fs::read(&artifact).unwrap();
-        assert_eq!(count_linesegarray(&disk), 0);
+        assert_eq!(
+            count_linesegarray(&disk),
+            0,
+            "clear-before-save must emit 0 hp:linesegarray"
+        );
+        assert_eq!(
+            count_linesegarray(&saved),
+            0,
+            "hg_save buffer must emit 0 hp:linesegarray"
+        );
 
         let saved_bins = zip_bindata_entries(&saved);
-        let count_preserved = saved_bins.len() == original_bins.len() && !saved_bins.is_empty();
-        let binary_preserved = count_preserved
-            && saved_bins
-                .iter()
-                .zip(original_bins.iter())
-                .all(|(a, b)| a.0 == b.0 && a.1 == b.1);
+        assert_eq!(
+            saved_bins.len(),
+            original_bins.len(),
+            "BinData file count must be preserved (original {} saved {})",
+            original_bins.len(),
+            saved_bins.len()
+        );
+        assert_eq!(
+            saved_bins, original_bins,
+            "BinData names + bytes must be preserved"
+        );
 
         let mut engine2: *mut hg_engine = ptr::null_mut();
         let status = hg_open(saved.as_ptr(), saved.len(), 0, &mut engine2);
         assert_eq!(status, HgStatus::Ok, "reopen {:?}", last_error_str());
         let after = list_images(engine2);
+        assert_image_meta_valid(&after);
+        assert_eq!(
+            after.len(),
+            before.len(),
+            "hg_list_images count must be preserved (before {} after {})",
+            before.len(),
+            after.len()
+        );
+        assert_eq!(after[0].width, before[0].width);
+        assert_eq!(after[0].height, before[0].height);
+        assert_eq!(after[0].format, before[0].format);
+        assert_eq!(after[0].bin_data_id, before[0].bin_data_id);
+        let text = plain_text(engine2);
         hg_close(engine2);
 
-        let list_count_preserved = after.len() == before.len();
-        eprintln!(
-            "hub-B image round-trip measurement (clear-before-save, no keep-on-save experiment):\n\
-             - original BinData entries: {}\n\
-             - saved BinData entries: {}\n\
-             - ZIP binary/count preserved: {}\n\
-             - hg_list_images count before/after: {}/{}\n\
-             - list count preserved: {}",
-            original_bins.len(),
-            saved_bins.len(),
-            if binary_preserved { "YES" } else { "NO" },
-            before.len(),
-            after.len(),
-            if list_count_preserved { "YES" } else { "NO" }
+        assert!(
+            text.contains("HGIMG99"),
+            "reopened plain text must contain inserted token, got {text:?}"
         );
-        // Intentionally no assert on binary preserve — week-6 product decision.
-        let _ = (binary_preserved, list_count_preserved);
     }
 }

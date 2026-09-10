@@ -17,11 +17,12 @@ jobs:
       - name: Product gates must not be ignored
         run: |
           if grep -nE '#\[ignore\]' engine/tests/gates.rs; then
-            echo "engine/tests/gates.rs must not use #[ignore] — replace/insert/delete/table/image + linesegarray=0 gates always run"
+            echo "engine/tests/gates.rs must not use #[ignore] — replace/insert/delete/table/image keep-on-save + linesegarray=0 gates always run"
             exit 1
           fi
       - name: Test hangyeol_engine
         run: |
           # Always run lib + integration gates. --include-ignored so a stray
-          # #[ignore] cannot skip replace/insert/delete/table/image/linesegarray=0.
+          # #[ignore] cannot skip replace/insert/delete/table/image
+          # keep-on-save/linesegarray=0.
           cargo test --manifest-path engine/Cargo.toml -- --include-ignored

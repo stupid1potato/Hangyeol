@@ -6,7 +6,8 @@
 //!
 //! Image-meta *list* (`hg_list_images`) walks `Control::Picture` in document
 //! order and returns index + `href` / `img_dim` / format meta. No BinData
-//! extract API, no keep-on-save product path. Fixture: hub-B.
+//! extract API. Keep-on-save of ZIP `BinData/` through clear-before-save is a
+//! hub-B product gate. Fixture: hub-B.
 
 mod error;
 
@@ -1055,6 +1056,23 @@ mod tests {
         assert!(again.contains("HGSET99"), "got {again:?}");
     }
 
+    fn zip_bindata_entries(hwpx: &[u8]) -> Vec<(String, Vec<u8>)> {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(hwpx)).unwrap();
+        let mut out = Vec::new();
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).unwrap();
+            let name = file.name().to_string();
+            if !name.starts_with("BinData/") {
+                continue;
+            }
+            let mut bytes = Vec::new();
+            file.read_to_end(&mut bytes).unwrap();
+            out.push((name, bytes));
+        }
+        out.sort_by(|a, b| a.0.cmp(&b.0));
+        out
+    }
+
     #[test]
     fn list_images_on_hub_b() {
         let bytes = hub_b();
@@ -1075,6 +1093,42 @@ mod tests {
         assert!(
             img.bin_data_id > 0 || !img.href_str().is_empty(),
             "Kit addressing needs bin_data_id or href, got {img:?}"
+        );
+    }
+
+    /// Product gate: hub-B keep-on-save at DocumentCore. Text insert then
+    /// clear-before-save must preserve ZIP BinData count/bytes and image meta.
+    #[test]
+    fn document_core_hub_b_keep_on_save_clear_before_save() {
+        let bytes = hub_b();
+        let original_bins = zip_bindata_entries(&bytes);
+        assert!(!original_bins.is_empty(), "hub-B must contain BinData/");
+
+        let mut core = DocumentCore::from_bytes(&bytes).expect("open hub-B");
+        let before = list_images(&core);
+        assert!(!before.is_empty());
+
+        insert_text(&mut core, 0, 0, 0, "HGIMG99").expect("insert");
+        assert!(collect_plain_text(core.document()).contains("HGIMG99"));
+
+        let exported = export_hwpx_cleared(&mut core).expect("clear-before-save");
+        assert_eq!(count_linesegarray(&exported), 0, "hp:linesegarray must be 0");
+
+        let saved_bins = zip_bindata_entries(&exported);
+        assert_eq!(saved_bins.len(), original_bins.len());
+        assert_eq!(saved_bins, original_bins);
+
+        let reopened = DocumentCore::from_bytes(&exported).expect("reopen");
+        let after = list_images(&reopened);
+        assert_eq!(after.len(), before.len());
+        assert_eq!(after[0].width, before[0].width);
+        assert_eq!(after[0].height, before[0].height);
+        assert_eq!(after[0].format, before[0].format);
+        assert_eq!(after[0].bin_data_id, before[0].bin_data_id);
+        let again = collect_plain_text(reopened.document());
+        assert!(
+            again.contains("HGIMG99"),
+            "inserted token must survive export, got {again:?}"
         );
     }
 
