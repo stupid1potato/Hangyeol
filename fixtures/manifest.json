@@ -1,4 +1,38 @@
 {
   "$schema": "./manifest.schema.json",
-  "fixtures": []
+  "fixtures": [
+    {
+      "id": "hub-A",
+      "path": "fixtures/hub_hwpxlib_SimpleTable.hwpx",
+      "format": "hwpx",
+      "expects": {
+        "sectionCount": 1
+      },
+      "license": "Apache-2.0",
+      "sourceUrl": "https://github.com/neolord0/hwpxlib/blob/f9fd2255ac0fc57414e0b657d115e7de51d31c65/testFile/reader_writer/SimpleTable.hwpx",
+      "owner": "dev1"
+    },
+    {
+      "id": "hub-B",
+      "path": "fixtures/hub_hwpxlib_SimplePicture.hwpx",
+      "format": "hwpx",
+      "expects": {
+        "sectionCount": 1
+      },
+      "license": "Apache-2.0",
+      "sourceUrl": "https://github.com/neolord0/hwpxlib/blob/f9fd2255ac0fc57414e0b657d115e7de51d31c65/testFile/reader_writer/SimplePicture.hwpx",
+      "owner": "dev1"
+    },
+    {
+      "id": "hub-C",
+      "path": "fixtures/hub_hwpxlib_sample1.hwpx",
+      "format": "hwpx",
+      "expects": {
+        "sectionCount": 1
+      },
+      "license": "Apache-2.0",
+      "sourceUrl": "https://github.com/neolord0/hwpxlib/blob/f9fd2255ac0fc57414e0b657d115e7de51d31c65/testFile/reader_writer/sample1.hwpx",
+      "owner": "dev1"
+    }
+  ]
 }

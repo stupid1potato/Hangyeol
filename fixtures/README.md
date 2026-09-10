@@ -1,21 +1,24 @@
 # Fixtures
 
-샘플 코퍼스 · 왕복 기대값. **바이너리 `.hwp` / `.hwpx` 픽스처는 이 PR에 커밋하지 않는다.**
+샘플 코퍼스 · 왕복 기대값.
 
-전체 목록·검증 포인트는 [`docs/week1-engine-comparison.md`](../docs/week1-engine-comparison.md) §C와 동일하다.
+**COMMIT_OK** Apache-2.0 허브 샘플(hub-A/B/C)만 바이너리로 커밋한다. **HOLD_LICENSE** 바이너리(MOJ / KOGL Type 2, SafeDocs LICENSE_UNKNOWN, msit per-article)는 커밋하지 않는다. 입수 판단은 [`docs/fixtures-intake-list.md`](../docs/fixtures-intake-list.md). 제3자 고지·SHA-256은 [`NOTICE`](NOTICE).
+
+전체 F01–F21 검증 포인트는 [`docs/week1-engine-comparison.md`](../docs/week1-engine-comparison.md) §C와 동일하다.
 
 ## 명명 · 매니페스트
 
 - 파일: `fixtures/{id}_{slug}.{hwp|hwpx|bin}`
   - 예: `01_plain_ko.hwp`
   - 잘못된 확장자 네거티브는 예외: F13 `13_wrong_ext_hwp.dat`, F14 `14_wrong_ext_hwpx.pdf`
+  - 공개 허브 extras: `hub_hwpxlib_{upstreamName}.hwpx`
 - 메타: [`manifest.json`](manifest.json) (스키마: [`manifest.schema.json`](manifest.schema.json))
 
 계획 필드:
 
 | 필드 | 설명 |
 |------|------|
-| `id` | `F01` … `F21` |
+| `id` | `F01` … `F21` 또는 `hub-A` … |
 | `path` | 저장소 상대 경로 |
 | `format` | `hwp5` \| `hwpx` \| `corrupt` \| `encrypted` |
 | `expects` | `plainText?`, `sectionCount?`, `encrypted?`, `errorCode?` |
@@ -23,11 +26,19 @@
 | `sourceUrl?` | 공개 입수 URL |
 | `owner` | `dev1` \| `hangul_owner` |
 
-현재 `manifest.json`의 `fixtures` 배열은 비어 있다 (입수 전).
+## Dev1 — COMMIT_OK (committed)
+
+neolord0/hwpxlib `testFile/reader_writer/` 사본. Apache-2.0. SHA-256은 [`NOTICE`](NOTICE).
+
+| id | path | format | status |
+|----|------|--------|--------|
+| hub-A | `hub_hwpxlib_SimpleTable.hwpx` | HWPX | **committed** |
+| hub-B | `hub_hwpxlib_SimplePicture.hwpx` | HWPX | **committed** |
+| hub-C | `hub_hwpxlib_sample1.hwpx` | HWPX | **committed** |
 
 ## Owner (Hangul) — 생성 스펙
 
-Hangul에서 생성. 한 줄 스펙.
+Hangul에서 생성. 한 줄 스펙. **OWNER_HANGUL**.
 
 | id | pattern | format | 검증 | 생성 스펙 |
 |----|---------|--------|------|-----------|
@@ -46,18 +57,18 @@ Hangul에서 생성. 한 줄 스펙.
 | F19 | `19_roundtrip_replace.hwpx` | HWPX | 치환 후 linesegarray 제거·Hangul 재오픈 | Hangul에서 `[[TOKEN]]` 포함 문서 작성 |
 | F20 | `20_units_a4_margins.hwpx` | HWPX | HWPUNIT A4 | Hangul에서 A4 여백 문서 작성 |
 
-## Dev1 — 공개 / corrupt / wrong-ext
+## Dev1 — 공개 / corrupt / wrong-ext (not committed)
 
-상태: **pending intake**. 라이선스 확인 전에는 바이너리를 커밋하지 않는다.
+라이선스 HOLD 또는 합성 대기. 바이너리를 커밋하지 않는다.
 
 | id | pattern | format | 검증 | 입수 방법 | status |
 |----|---------|--------|------|-----------|--------|
-| F11 | `11_gov_sample.hwp` | HWP5 | 실사용 HWP5 복합 문서 | 공공: 법무부 표준임대차 영문 HWP 등 (MOJ / KOGL 확인 후) | pending intake |
-| F12 | `12_gov_sample.hwpx` | HWPX | 실사용 HWPX | FreeHWP/msit-dl 또는 동 출처 | pending intake |
-| F13 | `13_wrong_ext_hwp.dat` | HWP5 bytes / 잘못된 확장자 | magic/OLE2로 `.hwp` 판별 | F01 복사 후 확장자만 변경 | pending intake |
-| F14 | `14_wrong_ext_hwpx.pdf` | HWPX bytes / 잘못된 확장자 | ZIP+`application/hwp+zip` mimetype 판별 | F02 복사 후 확장자 변경 | pending intake |
-| F16 | `16_corrupt_truncated.hwp` | corrupt HWP | 우아한 에러 | safedocs example_corrupt.hwp 또는 truncate | pending intake |
-| F18 | `18_table_image_mix.hwp` | HWP5 | 표+이미지+본문 | safedocs / team create | pending intake |
-| F21 | `21_prettyprinted_bad.hwpx` | HWPX 네거티브 | pretty-print ZIP 깨짐 | F02 변형 | pending intake |
+| F11 | `11_gov_sample.hwp` | HWP5 | 실사용 HWP5 복합 문서 | 공공: 법무부 표준임대차 영문 HWP 등 (MOJ / KOGL 확인 후) | **HOLD_LICENSE** (KOGL Type 2) |
+| F12 | `12_gov_sample.hwpx` | HWPX | 실사용 HWPX | FreeHWP/msit-dl 또는 동 출처 | **HOLD_LICENSE** |
+| F13 | `13_wrong_ext_hwp.dat` | HWP5 bytes / 잘못된 확장자 | magic/OLE2로 `.hwp` 판별 | F01 복사 후 확장자만 변경 | **SYNTHETIC_LATER** |
+| F14 | `14_wrong_ext_hwpx.pdf` | HWPX bytes / 잘못된 확장자 | ZIP+`application/hwp+zip` mimetype 판별 | F02 또는 hub HWPX 복사 후 확장자 변경 | **SYNTHETIC_LATER** |
+| F16 | `16_corrupt_truncated.hwp` | corrupt HWP | 우아한 에러 | safedocs example_corrupt.hwp 또는 truncate | **HOLD_LICENSE** / prefer **SYNTHETIC_LATER** |
+| F18 | `18_table_image_mix.hwp` | HWP5 | 표+이미지+본문 | safedocs / team create | **HOLD_LICENSE** |
+| F21 | `21_prettyprinted_bad.hwpx` | HWPX 네거티브 | pretty-print ZIP 깨짐 | F02 또는 hub HWPX 변형 | **SYNTHETIC_LATER** |
 
-**공개 샘플 허브**: safedocs HWP test pages; https://github.com/FreeHWP/msit-dl — 라이선스 확인 필수.
+**공개 샘플 허브**: safedocs HWP test pages; https://github.com/FreeHWP/msit-dl — 라이선스 확인 필수. SafeDocs / msit는 **HOLD_LICENSE**.

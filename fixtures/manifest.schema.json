@@ -11,7 +11,7 @@
     },
     "fixtures": {
       "type": "array",
-      "description": "Sample corpus entries. Empty until binaries are licensed and ingested.",
+      "description": "Sample corpus entries. COMMIT_OK hub samples may be listed; HOLD_LICENSE binaries must not.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -19,8 +19,8 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Fixture id such as F01 … F21",
-            "pattern": "^F[0-9]{2}$"
+            "description": "Fixture id such as F01 … F21 or hub-A … hub-C",
+            "pattern": "^(F[0-9]{2}|hub-[A-Z])$"
           },
           "path": {
             "type": "string",

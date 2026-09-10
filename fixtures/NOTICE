@@ -1,0 +1,35 @@
+Hangyeol third-party HWPX test fixtures
+=======================================
+
+The three COMMIT_OK hub samples below are copied unchanged from
+neolord0/hwpxlib and redistributed under the Apache License 2.0.
+
+Upstream project:  https://github.com/neolord0/hwpxlib
+Upstream license:  https://github.com/neolord0/hwpxlib/blob/main/license.txt
+Apache License 2.0:
+  https://www.apache.org/licenses/LICENSE-2.0
+  https://opensource.org/licenses/Apache-2.0
+Pinned commit:     f9fd2255ac0fc57414e0b657d115e7de51d31c65 (hwpxlib main @ 2026-08-31)
+Copyright:         Park.sungkyon (neolord0)
+
+Local path                                         Upstream path
+-----------------------------------------------    ----------------------------------------------
+fixtures/hub_hwpxlib_SimpleTable.hwpx              testFile/reader_writer/SimpleTable.hwpx
+fixtures/hub_hwpxlib_SimplePicture.hwpx            testFile/reader_writer/SimplePicture.hwpx
+fixtures/hub_hwpxlib_sample1.hwpx                  testFile/reader_writer/sample1.hwpx
+
+Source URLs (commit-pinned):
+  https://github.com/neolord0/hwpxlib/blob/f9fd2255ac0fc57414e0b657d115e7de51d31c65/testFile/reader_writer/SimpleTable.hwpx
+  https://github.com/neolord0/hwpxlib/blob/f9fd2255ac0fc57414e0b657d115e7de51d31c65/testFile/reader_writer/SimplePicture.hwpx
+  https://github.com/neolord0/hwpxlib/blob/f9fd2255ac0fc57414e0b657d115e7de51d31c65/testFile/reader_writer/sample1.hwpx
+
+SHA-256 (schema has no sha256 field; recorded here):
+  hub_hwpxlib_SimpleTable.hwpx
+    502d75c289813ce4b99648ecbc3cbe333bd8acd78e9f4b4b370566f308c1e6de
+  hub_hwpxlib_SimplePicture.hwpx
+    7ed3bdf89986fd88fdbcd92eaeac3f852aa6984fb1f7ddf4dd4f582afe20084c
+  hub_hwpxlib_sample1.hwpx
+    516db143466d3bc43e6808d4d5dc9da63abf014ec637ef01594f27998a0bd6c2
+
+These files are unmodified copies. HOLD_LICENSE sources (MOJ / KOGL Type 2,
+SafeDocs LICENSE_UNKNOWN, FreeHWP/msit-dl per-article) are not included.
