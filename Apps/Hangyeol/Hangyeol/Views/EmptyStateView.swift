@@ -6,16 +6,19 @@ struct EmptyStateView: View {
     var onOpenDocument: () -> Void
     var onOpenRecent: (RecentDocuments.Item) -> Void = { _ in }
 
+    @ScaledMetric(relativeTo: .largeTitle) private var iconSize = 48
+
     var body: some View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 18) {
                 Image(systemName: "doc.text.magnifyingglass")
-                    .font(.system(size: 48))
+                    .font(.system(size: iconSize))
                     .foregroundStyle(.tint)
                     .accessibilityHidden(true)
 
                 Text(L10n.appName)
                     .font(.largeTitle.weight(.semibold))
+                    .accessibilityAddTraits(.isHeader)
 
                 Text(L10n.appTagline)
                     .font(.title3)
@@ -25,6 +28,7 @@ struct EmptyStateView: View {
                 Text(L10n.week1Note)
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 12) {
                     Button(action: onOpenSample) {
@@ -33,26 +37,31 @@ struct EmptyStateView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut("o", modifiers: [.command, .shift])
+                    .accessibilityHint(L10n.openSample)
 
                     Button(action: onOpenDocument) {
                         Text(L10n.openDocument)
                             .frame(minWidth: 120)
                     }
                     .buttonStyle(.bordered)
+                    .accessibilityHint(L10n.openDocument)
                 }
                 .padding(.top, 8)
             }
             .frame(maxWidth: 420, alignment: .leading)
             .padding(40)
+            .accessibilityElement(children: .contain)
 
             Divider()
 
             VStack(alignment: .leading, spacing: 12) {
                 Text(L10n.recents)
                     .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
                 if recents.isEmpty {
                     Text(L10n.recentsEmpty)
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 4)
                 } else {
                     ForEach(recents.prefix(8)) { item in
@@ -64,14 +73,18 @@ struct EmptyStateView: View {
                         }
                         .buttonStyle(.plain)
                         .help(item.url.path)
+                        .accessibilityLabel(item.title)
+                        .accessibilityHint(L10n.recentsOpenHint)
                     }
                 }
                 Spacer()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(32)
+            .accessibilityElement(children: .contain)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityIdentifier("empty-state")
     }
 }
 
